@@ -526,7 +526,8 @@
       document.body.removeChild(link);
     }
     ///////
-   
+    let equityPerYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
+
     function runSimulation() {
       const NUM_RUNS = 5000;
       const simulationStartYear = 2025;
@@ -559,7 +560,6 @@
 
       const sellerDebtScheduleMonthly = Array.from({ length: years }, () => Array(months).fill(0));
 
-      let equityPerYear = Array.from({ length: years }, () => []);
       let equityPerCompany = Array.from({ length: numCompanies }, () => []);
       
 
@@ -747,7 +747,7 @@
             }
 
             // Track equity needed per year and per company
-            equityPerYear[acqOffset].push(equityUsedForThisAcq);
+            equityPerYear[acqOffset][run] += equityUsedForThisAcq;
             equityPerCompany[i].push(equityUsedForThisAcq);
 
             netCashFlow[acqOffset][acqMonth - 1] -= upfrontCash;
@@ -906,60 +906,63 @@
           }
         }
 
-    // Final average by dividing only by counts (not full NUM_RUNS)
-    for (let y = 0; y < years; y++) {
-      for (let m = 0; m < months; m++) {
-        revenueTotals[y][m] /= NUM_RUNS;
-        costTotals[y][m]    /= NUM_RUNS;
-        ebitdaTotals[y][m]  /= NUM_RUNS;
-      }
-    }
+        const totalEquityThisRun = equityPerYear.reduce((sum, yearArray) => sum + yearArray[run], 0);
+        cashRequiredRuns.push(totalEquityThisRun);
 
-    document.getElementById("resultsTable").innerHTML = '';
-    renderTable("Revenue (Avg)", revenueTotals);
-    renderTable("Cost (Avg)", costTotals);
-    renderTable("EBITDA (Avg)", ebitdaTotals);
+        // Final average by dividing only by counts (not full NUM_RUNS)
+        for (let y = 0; y < years; y++) {
+            for (let m = 0; m < months; m++) {
+                revenueTotals[y][m] /= NUM_RUNS;
+                costTotals[y][m]    /= NUM_RUNS;
+                ebitdaTotals[y][m]  /= NUM_RUNS;
+            }
+        }
 
-    const summary = [];
-    for (let y = 0; y < years; y++) {
-      const values = ebitdaAnnualRuns.map(run => run[y]);
-      summary.push({
-        year: y + 1,
-        mean: values.reduce((a, b) => a + b, 0) / NUM_RUNS,
-        p10: percentile(values, 10),
-        p50: percentile(values, 50),
-        p90: percentile(values, 90)
-      });
-    }
+        document.getElementById("resultsTable").innerHTML = '';
+        renderTable("Revenue (Avg)", revenueTotals);
+        renderTable("Cost (Avg)", costTotals);
+        renderTable("EBITDA (Avg)", ebitdaTotals);
 
-    const cashSummary = {
-      p10: percentile(cashRequiredRuns, 10),
-      p50: percentile(cashRequiredRuns, 50),
-      p90: percentile(cashRequiredRuns, 90),
-      mean: cashRequiredRuns.reduce((a, b) => a + b, 0) / cashRequiredRuns.length
+        const summary = [];
+        for (let y = 0; y < years; y++) {
+            const values = ebitdaAnnualRuns.map(run => run[y]);
+            summary.push({
+                year: y + 1,
+                mean: values.reduce((a, b) => a + b, 0) / NUM_RUNS,
+                p10: percentile(values, 10),
+                p50: percentile(values, 50),
+                p90: percentile(values, 90)
+            });
+        }
+
+        const cashSummary = {
+        p10: percentile(cashRequiredRuns, 10),
+        p50: percentile(cashRequiredRuns, 50),
+        p90: percentile(cashRequiredRuns, 90),
+        mean: cashRequiredRuns.reduce((a, b) => a + b, 0) / cashRequiredRuns.length
     };
 
-    renderMonteCarloSummary(summary);
-    document.getElementById("chartsSection").style.display = "block";
-    renderCharts(
-      summary,
-      revenueTotals,
-      costTotals,
-      ebitdaTotals,
-      ebitdaAnnualRuns,
-      valuationRunsByYear,
-      cashByYear,
-      companyRunData,
-      sellerDebtScheduleByCompany,
-      debtScheduleByCompany,
-      equityPerYear,
-      equityPerCompany,
-      numCompanies,
-      years,
-      months
-    );
+        renderMonteCarloSummary(summary);
+        document.getElementById("chartsSection").style.display = "block";
+        renderCharts(
+        summary,
+        revenueTotals,
+        costTotals,
+        ebitdaTotals,
+        ebitdaAnnualRuns,
+        valuationRunsByYear,
+        cashByYear,
+        companyRunData,
+        sellerDebtScheduleByCompany,
+        debtScheduleByCompany,
+        equityPerYear,
+        equityPerCompany,
+        numCompanies,
+        years,
+        months
+        );
 
-  }
+    }
     function renderTable(label, matrix) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const wrapperId = `${label.toLowerCase()}TableWrapper`;
