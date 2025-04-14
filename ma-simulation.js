@@ -270,6 +270,7 @@
         debtScheduleByCompany,
         equityPerYear,
         equityPerCompany,
+        debtUsedByYear
         cashRequiredRuns, 
         numCompanies,
         years,
@@ -367,6 +368,21 @@
             boxmode: "group"
         });
 
+
+        const debtBoxByYear = debtUsedByYear.map((vals, idx) => ({
+            y: vals,
+            type: 'box',
+            name: `Year ${simulationStartYear + idx}`,
+            boxpoints: false,
+            width: 0.5
+        }));
+        
+        Plotly.newPlot("debtByYearChart", debtBoxByYear, {
+            title: "Debt Used by Year (All Runs)",
+            yaxis: { title: "Debt ($)" }
+        });
+        
+
   
 
 
@@ -445,7 +461,29 @@
             yaxis: { title: "Equity ($)" }
         });
 
-        
+        // Debt Used – CDF
+        const totalDebtPerRun = debtUsedByYear[0].map((_, runIdx) =>
+            debtUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
+        );
+        const debtCDFSorted = [...totalDebtPerRun].sort((a, b) => a - b);
+        const debtCDF = debtCDFSorted.map((val, idx) => ({
+            x: val,
+            y: (idx + 1) / totalDebtPerRun.length
+        }));
+
+        Plotly.newPlot("debtCDFChart", [{
+            x: debtCDF.map(p => p.x),
+            y: debtCDF.map(p => p.y),
+            type: "scatter",
+            mode: "lines",
+            line: { color: "rgba(54, 162, 235, 1)" }
+        }], {
+            title: "Cumulative Distribution – Total Debt Used",
+            xaxis: { title: "Total Debt ($)" },
+            yaxis: { title: "Probability", range: [0, 1] },
+            margin: { t: 60 }
+        });
+
         // Equity Required – CDF
         const totalEquityPerRun = equityPerYear[0].map((_, runIdx) =>
             equityPerYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
@@ -468,6 +506,8 @@
             yaxis: { title: "Probability", range: [0, 1] },
             margin: { t: 60 }
         });
+
+
 
 
 
@@ -597,8 +637,12 @@
 
       const sellerDebtScheduleMonthly = Array.from({ length: years }, () => Array(months).fill(0));
 
+
+      
+
       let equityPerCompany = Array.from({ length: numCompanies }, () => []);
       let equityPerYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));      
+      let debtUsedByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
 
       const sellerDebtScheduleByCompany = Array.from({ length: numCompanies }, () =>
         Array.from({ length: years }, () => Array(months).fill(0))
@@ -757,6 +801,7 @@
 
                     // Compute dollar amount from % of valuation
                     const debtAmount = (debtPct / 100) * valuation;
+                    debtUsedByYear[acqOffset][run] += debtAmount;
 
                     // Transaction Fee (based on debt)
                     const feePct  = +document.getElementById(`fund_fee_${i}`).value || 0;
@@ -785,7 +830,8 @@
 
                     // Track equity needed per year and per company
                     equityPerYear[acqOffset][run] += equityUsedForThisAcq;
-                    equityPerCompany[i].push(equityUsedForThisAcq);
+                    equityPerCompany[i][run] = equityUsedForThisAcq;
+
 
                     netCashFlow[acqOffset][acqMonth - 1] -= upfrontCash;
                     cashByYear[acqOffset] += upfrontCash;
@@ -975,6 +1021,7 @@
                 debtScheduleByCompany,
                 equityPerYear,
                 equityPerCompany,
+                debtUsedByYear
                 cashRequiredRuns, 
                 numCompanies,
                 years,
