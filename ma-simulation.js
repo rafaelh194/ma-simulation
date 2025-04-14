@@ -1013,7 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
     generateBtn.addEventListener('click', generateCompanies);
   }
 
-  const runSimBtn = document.querySelector('button[onclick*="runSimulation"]');
+  const runSimBtn = document.getElementById('runSimBtn');
   if (runSimBtn) {
     runSimBtn.addEventListener('click', runSimulation);
   }
