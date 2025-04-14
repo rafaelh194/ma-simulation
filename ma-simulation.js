@@ -932,8 +932,7 @@
             }
         }
 
-        const totalEquityThisRun = equityPerYear.reduce((sum, yearArray) => sum + yearArray[run], 0);
-        cashRequiredRuns.push(totalEquityThisRun);
+
 
         // Final average by dividing only by counts (not full NUM_RUNS)
         for (let y = 0; y < years; y++) {
