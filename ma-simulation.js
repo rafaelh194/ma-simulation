@@ -405,22 +405,32 @@
       });
       
 
-      const cashBoxData = cashRequiredPerYear.map((yearData, idx) => ({
-        y: yearData,
+      // For boxplot per year
+      const equityBoxByYear = equityPerYear.map((vals, idx) => ({
+        y: vals,
         type: 'box',
         name: `${simulationStartYear + idx}`,
         boxpoints: false,
-        width: 0.5,
-        marker: { color: 'rgba(255, 99, 132, 0.6)' },
-        line: { color: 'rgba(255, 99, 132, 1)' }
+        width: 0.5
       }));
-
-      Plotly.newPlot("cashRequiredByYearChart", cashBoxData, {
-        title: "Equity / Cash Required by Year (All Runs)",
-        yaxis: { title: "Required Equity ($)" },
-        margin: { t: 60 },
-        boxmode: "group"
+      Plotly.newPlot("equityByYearChart", equityBoxByYear, {
+        title: "Equity Injection Required by Year",
+        yaxis: { title: "Equity ($)" }
       });
+
+      // For boxplot per company
+      const equityBoxByCompany = equityPerCompany.map((vals, idx) => ({
+        y: vals,
+        type: 'box',
+        name: `Company ${idx + 1}`,
+        boxpoints: false,
+        width: 0.5
+      }));
+      Plotly.newPlot("equityByCompanyChart", equityBoxByCompany, {
+        title: "Equity Required by Company (All Runs)",
+        yaxis: { title: "Equity ($)" }
+      });
+
 
 
     }
@@ -547,6 +557,10 @@
 
       const sellerDebtScheduleMonthly = Array.from({ length: years }, () => Array(months).fill(0));
 
+      let equityPerYear = Array.from({ length: years }, () => []);
+      let equityPerCompany = Array.from({ length: numCompanies }, () => []);
+      
+
       const sellerDebtScheduleByCompany = Array.from({ length: numCompanies }, () =>
         Array.from({ length: years }, () => Array(months).fill(0))
       );
@@ -563,6 +577,7 @@
         let usedInitialCashBS = false;
         let sfCapitalRemaining = +document.getElementById('sf_capital_left').value * 1000 || 0;
         const initialCashBS = +document.getElementById('initial_cash').value * 1000 || 0;
+        let rollupCashBalance = initialCashBS + sfCapitalRemaining;
 
 
         for (let i = 0; i < numCompanies; i++) {
@@ -719,6 +734,19 @@
               feeAmount +
               minOpCash +
               extraInitialCash;
+            let equityUsedForThisAcq = upfrontCash;
+
+            if (rollupCashBalance >= upfrontCash) {
+              rollupCashBalance -= upfrontCash;
+              equityUsedForThisAcq = 0;
+            } else {
+              equityUsedForThisAcq = upfrontCash - rollupCashBalance;
+              rollupCashBalance = 0;
+            }
+
+            // Track equity needed per year and per company
+            equityPerYear[acqOffset].push(equityUsedForThisAcq);
+            equityPerCompany[i].push(equityUsedForThisAcq);
 
             netCashFlow[acqOffset][acqMonth - 1] -= upfrontCash;
             cashByYear[acqOffset] += upfrontCash;
@@ -865,12 +893,13 @@
 
             for (let m = 0; m < months; m++) {
               runningBalance += netCashFlow[y][m];
-              if (netCashFlow[y][m] < 0) {
-                annualShortfall += -netCashFlow[y][m];
+              if (runningBalance < minBalance) {
+                minBalance = runningBalance;
               }
             }
 
-            cashRequiredPerYear[y].push(annualShortfall);
+            const equityRequiredThisYear = -minBalance;
+            cashRequiredPerYear[y].push(equityRequiredThisYear);
           }
         }
 
@@ -1028,4 +1057,3 @@ document.addEventListener('DOMContentLoaded', () => {
   window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
   window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
 });
-
