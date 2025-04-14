@@ -927,3 +927,84 @@
     );
 
   }
+    function renderTable(label, matrix) {
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const wrapperId = `${label.toLowerCase()}TableWrapper`;
+      const tableId = `${label.toLowerCase()}TableBody`;
+
+      let html = `
+        <div class="table-wrapper">
+          <div class="toggle-btn" onclick="toggleTable('${wrapperId}')">− ${label} Table</div>
+          <div id="${wrapperId}">
+            <table>
+              <thead>
+                <tr><th>Year</th>${months.map(m => `<th>${m}</th>`).join('')}<th>Total</th></tr>
+              </thead>
+              <tbody id="${tableId}">
+      `;
+
+      for (let y = 0; y < 7; y++) {
+        const monthly = matrix[y];
+        const total = monthly.reduce((sum, val) => sum + val, 0);
+        html += `<tr><td>${2025 + y}</td>` +
+                monthly.map(v => `<td>${v.toFixed(0)}</td>`).join('') +
+                `<td><strong>${total.toFixed(0)}</strong></td></tr>`;
+      }
+
+      html += `</tbody></table></div></div><br/>`;
+      document.getElementById("resultsTable").innerHTML += html;
+    }
+
+    function toggleTable(id) {
+      const wrapper = document.getElementById(id);
+      const toggle = wrapper.previousElementSibling;
+      const collapsed = wrapper.classList.toggle("collapsed");
+      const label = toggle.innerText.slice(2);
+      toggle.innerText = (collapsed ? '+ ' : '− ') + label;
+    }
+
+    function percentile(arr, p) {
+      arr.sort((a, b) => a - b);
+      const i = (arr.length - 1) * (p / 100);
+      const lower = Math.floor(i), upper = Math.ceil(i);
+      return lower === upper ? arr[lower] : arr[lower] + (arr[upper] - arr[lower]) * (i - lower);
+    }
+
+    function renderMonteCarloSummary(summary) {
+      const totalMean = summary.reduce((sum, row) => sum + row.mean, 0);
+      const totalP50 = summary.reduce((sum, row) => sum + row.p50, 0);
+
+      const firstCol = totalMean <= totalP50 ? "mean" : "p50";
+      const secondCol = totalMean <= totalP50 ? "p50" : "mean";
+
+      let html = `
+        <div class="table-wrapper">
+          <div class="toggle-btn" onclick="toggleTable('mcSummaryTable')">− EBITDA Monte Carlo Summary</div>
+          <div id="mcSummaryTable">
+            <table>
+              <thead>
+                <tr>
+                  <th>Year</th>
+                  <th>${firstCol === "mean" ? "Mean" : "Median"}</th>
+                  <th>${secondCol === "mean" ? "Mean" : "Median"}</th>
+                  <th>P10</th>
+                  <th>P90</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+
+      summary.forEach(row => {
+        html += `<tr>
+          <td>${2025 + row.year - 1}</td>
+          <td>${(firstCol === "mean" ? row.mean : row.p50).toFixed(0)}</td>
+          <td>${(secondCol === "mean" ? row.mean : row.p50).toFixed(0)}</td>
+          <td>${row.p10.toFixed(0)}</td>
+          <td>${row.p90.toFixed(0)}</td>
+        </tr>`;
+      });
+
+      html += `</tbody></table></div></div><br/>`;
+      document.getElementById("resultsTable").innerHTML += html;
+    }
+  </script>
