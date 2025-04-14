@@ -904,19 +904,19 @@
             let runningBalance = 0;
 
             for (let y = 0; y < years; y++) {
-            let equityInjectedThisYear = 0;
-            for (let m = 0; m < months; m++) {
-                runningBalance += netCashFlow[y][m];
-            
-                if (runningBalance < minOpCash) {
-                const shortfall = minOpCash - runningBalance;
-                equityInjectedThisYear += shortfall;
-                runningBalance += shortfall;
+                let equityInjectedThisYear = 0;
+                for (let m = 0; m < months; m++) {
+                    runningBalance += netCashFlow[y][m];
+                
+                    if (runningBalance < minOpCash) {
+                    const shortfall = minOpCash - runningBalance;
+                    equityInjectedThisYear += shortfall;
+                    runningBalance += shortfall;
+                    }
                 }
-            }
-            
-            cashRequiredPerYear[y].push(equityInjectedThisYear); // Used for boxplot
-            equityPerYear[y][run] = equityInjectedThisYear;      // Used for yearly equity chart
+                
+                cashRequiredPerYear[y].push(equityInjectedThisYear); // Used for boxplot
+                equityPerYear[y][run] = equityInjectedThisYear;      // Used for yearly equity chart
             }
             
             const totalEquityThisRun = equityPerYear.reduce(
@@ -924,7 +924,7 @@
             0
             );
             cashRequiredRuns.push(totalEquityThisRun);
-            
+        }            
 
 
         // Final average by dividing only by counts (not full NUM_RUNS)
@@ -960,30 +960,30 @@
             mean: cashRequiredRuns.reduce((a, b) => a + b, 0) / cashRequiredRuns.length
         };
 
-        renderMonteCarloSummary(summary);
-        document.getElementById("chartsSection").style.display = "block";
-        renderCharts(
-            summary,
-            revenueTotals,
-            costTotals,
-            ebitdaTotals,
-            ebitdaAnnualRuns,
-            valuationRunsByYear,
-            cashByYear,
-            companyRunData,
-            sellerDebtScheduleByCompany,
-            debtScheduleByCompany,
-            equityPerYear,
-            equityPerCompany,
-            cashRequiredRuns, 
-            numCompanies,
-            years,
-            months
-        );
+            renderMonteCarloSummary(summary);
+            document.getElementById("chartsSection").style.display = "block";
+            renderCharts(
+                summary,
+                revenueTotals,
+                costTotals,
+                ebitdaTotals,
+                ebitdaAnnualRuns,
+                valuationRunsByYear,
+                cashByYear,
+                companyRunData,
+                sellerDebtScheduleByCompany,
+                debtScheduleByCompany,
+                equityPerYear,
+                equityPerCompany,
+                cashRequiredRuns, 
+                numCompanies,
+                years,
+                months
+            );
 
         }
-    }
     
+
     function renderTable(label, matrix) {
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const wrapperId = `${label.toLowerCase()}TableWrapper`;
