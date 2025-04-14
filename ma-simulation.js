@@ -1008,15 +1008,24 @@
     }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('generateCompaniesBtn').addEventListener('click', generateCompanies);
-  document.querySelector('button[onclick*="runSimulation"]')?.addEventListener('click', runSimulation);
+  const generateBtn = document.getElementById('generateCompaniesBtn');
+  if (generateBtn) {
+    generateBtn.addEventListener('click', generateCompanies);
+  }
 
-    window.generateCompanies = generateCompanies;
-    window.runSimulation = runSimulation;
-    window.toggleCompany = toggleCompany;
-    window.toggleAllCompanies = toggleAllCompanies;
-    window.toggleCollapsedBlock = toggleCollapsedBlock;
-    window.toggleTable = toggleTable;
-    window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
-    window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
+  const runSimBtn = document.querySelector('button[onclick*="runSimulation"]');
+  if (runSimBtn) {
+    runSimBtn.addEventListener('click', runSimulation);
+  }
+  console.log("DOM fully loaded");
+  // Global exposure (not strictly needed anymore if not using onclick="")
+  window.generateCompanies = generateCompanies;
+  window.runSimulation = runSimulation;
+  window.toggleCompany = toggleCompany;
+  window.toggleAllCompanies = toggleAllCompanies;
+  window.toggleCollapsedBlock = toggleCollapsedBlock;
+  window.toggleTable = toggleTable;
+  window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
+  window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
 });
+
