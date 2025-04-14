@@ -890,7 +890,8 @@
           for (let y = 0; y < years; y++) {
             let annualShortfall = 0;
             let runningBalance = 0;
-
+            let minBalance = 0;
+            
             for (let m = 0; m < months; m++) {
               runningBalance += netCashFlow[y][m];
               if (runningBalance < minBalance) {
@@ -1057,3 +1058,4 @@ document.addEventListener('DOMContentLoaded', () => {
   window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
   window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
 });
+
