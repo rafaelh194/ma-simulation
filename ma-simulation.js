@@ -55,14 +55,46 @@
       const container = document.getElementById('companies-container');
       container.innerHTML = '';
 
+      let startYear = 2025;
+      let startMonth = 7; // July
+      let lastAcqYear = startYear;
+      let lastAcqMonth = startMonth;
+
+      function randomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      function addMonths(year, month, offset) {
+            const totalMonths = (year * 12 + (month - 1)) + offset;
+            const newYear = Math.floor(totalMonths / 12);
+            const newMonth = (totalMonths % 12) + 1;
+            return { year: newYear, month: newMonth };
+        }
+      
+      
+
       for (let i = 0; i < numCompanies; i++) {
         const rand = Math.random();
+        let acqYear, acqMonth;
         let type;
+
+        if (i === 0) {
+            acqYear = 2025;
+            acqMonth = 7; // July
+          } else {
+            const monthOffset = randomInt(5, 7); 
+            const next = addMonths(lastAcqYear, lastAcqMonth, monthOffset);
+            acqYear = next.year;
+            acqMonth = next.month;
+            lastAcqYear = acqYear;
+            lastAcqMonth = acqMonth;
+          }
+
         if (rand < weights[0]) type = 'Single Owner';
         else if (rand < weights[0] + weights[1]) type = 'Small Firm';
         else type = 'Mid Firm';
 
-        container.innerHTML += createCompanyBlock(i, type, archetypeDefaults[type]);
+        container.innerHTML += createCompanyBlock(i, type, archetypeDefaults[type], acqYear, acqMonth);
       }
 
       document.getElementById('companyCount').innerText = `${numCompanies} companies`;
@@ -128,7 +160,7 @@
       container.appendChild(row);
     }
 
-    function createCompanyBlock(i, type, defaults) {
+    function createCompanyBlock(i, type, defaults, acqYear, acqMonth) {
       return `
         <div class="section company-block">
           <div class="toggle-btn" onclick="toggleCompany(${i})" id="toggle${i}">− Company ${i + 1} (${type})</div>
@@ -200,8 +232,8 @@
               </div>
               <div class="input-group">
                 <label>Acquisition Timing</label>
-                <div class="input-pair"><span>Year</span><input id="c${i}_year" value="${defaults.timing.year}" /></div>
-                <div class="input-pair"><span>Month</span><input id="c${i}_month" value="${defaults.timing.month}" /></div>
+                <div class="input-pair"><span>Year</span><input id="c${i}_year" value="${acqYear}" /></div>
+                <div class="input-pair"><span>Month</span><input id="c${i}_month" value="${acqMonth}" /></div>
               </div>
             </div>
           </div>
@@ -271,6 +303,7 @@
         equityPerYear,
         equityPerCompany,
         debtUsedByYear,
+        opsCashUsedByYear,
         cashRequiredRuns, 
         numCompanies,
         years,
@@ -507,6 +540,29 @@
             margin: { t: 60 }
         });
 
+        const totalOpsCashPerRun = opsCashUsedByYear[0].map((_, runIdx) =>
+            opsCashUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
+        );
+        
+        const sortedOps = [...totalOpsCashPerRun].sort((a, b) => a - b);
+        const opsCDF = sortedOps.map((val, idx) => ({
+            x: val,
+            y: (idx + 1) / NUM_RUNS
+        }));
+        
+        Plotly.newPlot("opsCashCDFChart", [{
+            x: opsCDF.map(p => p.x),
+            y: opsCDF.map(p => p.y),
+            type: "scatter",
+            mode: "lines",
+            line: { color: "green" }
+        }], {
+            title: "CDF – Operations Cash Used",
+            xaxis: { title: "Operating Cash ($)" },
+            yaxis: { title: "Probability", range: [0, 1] }
+        });
+        
+
 
 
 
@@ -643,6 +699,8 @@
       let equityPerCompany = Array.from({ length: numCompanies }, () => []);
       let equityPerYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));      
       let debtUsedByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
+      let opsCashUsedByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
+
 
       const sellerDebtScheduleByCompany = Array.from({ length: numCompanies }, () =>
         Array.from({ length: years }, () => Array(months).fill(0))
@@ -832,6 +890,8 @@
                     equityPerYear[acqOffset][run] += equityUsedForThisAcq;
                     equityPerCompany[i][run] = equityUsedForThisAcq;
 
+                    const opsCashUsed = upfrontCash - equityUsedForThisAcq;
+                    opsCashUsedByYear[acqOffset][run] += opsCashUsed;
 
                     netCashFlow[acqOffset][acqMonth - 1] -= upfrontCash;
                     cashByYear[acqOffset] += upfrontCash;
@@ -1022,6 +1082,7 @@
                 equityPerYear,
                 equityPerCompany,
                 debtUsedByYear,
+                opsCashUsedByYear,
                 cashRequiredRuns, 
                 numCompanies,
                 years,
