@@ -1,4 +1,3 @@
-<script defer>
     const archetypes = ['Single Owner', 'Small Firm', 'Mid Firm'];
     let allCollapsed = false;
     let collapsedView = false;
@@ -1016,4 +1015,3 @@
     window.toggleTable = toggleTable;
     window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
     window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
-</script>
