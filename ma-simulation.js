@@ -1007,4 +1007,13 @@
       html += `</tbody></table></div></div><br/>`;
       document.getElementById("resultsTable").innerHTML += html;
     }
-  </script>
+
+    window.generateCompanies = generateCompanies;
+    window.runSimulation = runSimulation;
+    window.toggleCompany = toggleCompany;
+    window.toggleAllCompanies = toggleAllCompanies;
+    window.toggleCollapsedBlock = toggleCollapsedBlock;
+    window.toggleTable = toggleTable;
+    window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
+    window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
+</script>
