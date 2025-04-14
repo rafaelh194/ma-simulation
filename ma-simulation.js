@@ -589,6 +589,7 @@
 
       const ebitdaAnnualRuns = Array.from({ length: NUM_RUNS }, () => Array(years).fill(0));
       const cashRequiredRuns = [];
+      const cashRequiredPerYear = Array.from({ length: years }, () => []);
       const valuationRunsByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
       const cashByYear = Array(years).fill(0);
       const companyRunData = [];
@@ -923,30 +924,28 @@
             cashRequiredRuns.push(totalEquityRequired);
 
             // Track cash required per year (boxplot)
-            if (!window.cashRequiredPerYear) window.cashRequiredPerYear = Array.from({ length: years }, () => []);
             for (let y = 0; y < years; y++) {
-              let equityInjectedThisYear = 0;
-              for (let m = 0; m < months; m++) {
-                runningBalance += netCashFlow[y][m];
-            
-                if (runningBalance < minOpCash) {
-                  const shortfall = minOpCash - runningBalance;
-                  equityInjectedThisYear += shortfall;
-                  runningBalance += shortfall;
+                let equityInjectedThisYear = 0;
+                for (let m = 0; m < months; m++) {
+                  runningBalance += netCashFlow[y][m];
+              
+                  if (runningBalance < minOpCash) {
+                    const shortfall = minOpCash - runningBalance;
+                    equityInjectedThisYear += shortfall;
+                    runningBalance += shortfall;
+                  }
                 }
-              }
-            
-              // ✅ Track year-by-year equity (boxplot & charts)
-              cashRequiredPerYear[y].push(equityInjectedThisYear);
-              equityPerYear[y][run] = equityInjectedThisYear;
+              
+                cashRequiredPerYear[y].push(equityInjectedThisYear); // Used for boxplot
+                equityPerYear[y][run] = equityInjectedThisYear;     // Used for yearly equity chart
             }
-
+              
             const totalEquityThisRun = equityPerYear.reduce(
                 (sum, yearArray) => sum + (yearArray[run] || 0),
                 0
-              );
-              cashRequiredRuns.push(totalEquityThisRun);
-        }
+            );
+            cashRequiredRuns.push(totalEquityThisRun);
+              
 
 
 
