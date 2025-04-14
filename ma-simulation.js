@@ -123,35 +123,39 @@
         card.style.backgroundColor = 'white';
         card.style.flex = '1 1 300px';
         card.innerHTML = `
-          <h4>Source – Acq. ${i + 1}</h4>
-          <div class="input-group">
-            <label>Debt Min (%)</label>
-            <input id="fund_debt_min_${i}" type="number" value="20">
-          </div>
-          <div class="input-group">
-            <label>Debt ML (%)</label>
-            <input id="fund_debt_ml_${i}" type="number" value="30">
-          </div>
-          <div class="input-group">
-            <label>Debt Max (%)</label>
-            <input id="fund_debt_max_${i}" type="number" value="40">
-          </div>
-          <div class="input-group">
-            <label>Transaction Fee (%)</label>
-            <input id="fund_fee_${i}" type="number" value="2">
-          </div>
-          <div class="input-group">
-            <label>Rate (%)</label>
-            <input id="fund_rate_${i}" type="number" value="5">
-          </div>
-          <div class="input-group">
-            <label>Min OP Cash ($K)</label>
-            <input id="fund_cash_min_${i}" type="number" value="0">
-          </div>
-          <div class="input-group">
-            <label>Term (mo)</label>
-            <input id="fund_term_${i}" type="number" value="72">
-          </div>
+            <h4>Source – Acq. ${i + 1}</h4>
+            <div class="input-group">
+            <label>Financing Strategy</label>
+            <div class="row">
+                <div class="input-group">
+                <label>Max DSCR</label>
+                <input id="fund_dscr_max_${i}" value="2" />
+                </div>
+                <div class="input-group">
+                <label>Debt (%)</label>
+                <div class="input-pair"><span>Min</span><input id="fund_debt_min_${i}" value="40" /></div>
+                <div class="input-pair"><span>ML</span><input id="fund_debt_ml_${i}" value="50" /></div>
+                <div class="input-pair"><span>Max</span><input id="fund_debt_max_${i}" value="60" /></div>
+                </div>
+                <div class="input-group">
+                <label>Transaction Fee (%)</label>
+                <input id="fund_fee_${i}" value="3" />
+                </div>
+                <div class="input-group">
+                <label>Debt Rate (%)</label>
+                <input id="fund_rate_${i}" value="6" />
+                </div>
+                <div class="input-group">
+                <label>Term (mo)</label>
+                <input id="fund_term_${i}" value="60" />
+                </div>
+                <div class="input-group">
+                <label>Min Op. Cash ($)</label>
+                <input id="fund_min_cash_${i}" value="100" />
+                </div>
+            </div>
+            </div>
+
 
         `;
         row.appendChild(card);
@@ -304,6 +308,7 @@
         equityPerCompany,
         debtUsedByYear,
         opsCashUsedByYear,
+        rollupDSCRByYear, 
         cashRequiredRuns, 
         numCompanies,
         years,
@@ -547,7 +552,7 @@
         const sortedOps = [...totalOpsCashPerRun].sort((a, b) => a - b);
         const opsCDF = sortedOps.map((val, idx) => ({
             x: val,
-            y: (idx + 1) / NUM_RUNS
+            y: (idx + 1) / totalOpsCashPerRun.length
         }));
         
         Plotly.newPlot("opsCashCDFChart", [{
@@ -562,6 +567,21 @@
             yaxis: { title: "Probability", range: [0, 1] }
         });
         
+        const dscrBoxByYear = rollupDSCRByYear.map((vals, idx) => ({
+            y: vals.filter(v => v !== null), // filter out years with no debt
+            type: 'box',
+            name: `Year ${simulationStartYear + idx}`,
+            boxpoints: false,
+            width: 0.5
+          }));
+          
+          Plotly.newPlot("rollupDSCRChart", dscrBoxByYear, {
+            title: "Rollup DSCR by Year (All Runs)",
+            yaxis: { title: "DSCR Ratio", range: [0, 3] },
+            xaxis: { title: "Year" },
+            margin: { t: 60 }
+          });
+          
 
 
 
@@ -700,7 +720,9 @@
       let equityPerYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));      
       let debtUsedByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
       let opsCashUsedByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
-
+      const rollupDSCRByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(null));
+      const totalDebtServiceByYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
+  
 
       const sellerDebtScheduleByCompany = Array.from({ length: numCompanies }, () =>
         Array.from({ length: years }, () => Array(months).fill(0))
@@ -855,6 +877,7 @@
                     const debtMin = +document.getElementById(`fund_debt_min_${i}`).value || 0;
                     const debtML  = +document.getElementById(`fund_debt_ml_${i}`).value || 0;
                     const debtMax = +document.getElementById(`fund_debt_max_${i}`).value || 0;
+                    const maxDSCR = +document.getElementById(`fund_dscr_max_${i}`).value || 2;
                     const debtPct = sampleTriangular(debtMin, debtML, debtMax);
 
                     // Compute dollar amount from % of valuation
@@ -957,6 +980,7 @@
                         debtBalance -= principal;
 
                         debtScheduleByCompany[i][y][mo] += monthlyDebtPmt;
+                        totalDebtServiceByYear[y][run] += monthlyDebtPmt;
 
                         if (!debtScheduleByCompany[i].interest) debtScheduleByCompany[i].interest = Array.from({ length: years }, () => Array(months).fill(0));
                         if (!debtScheduleByCompany[i].principal) debtScheduleByCompany[i].principal = Array.from({ length: years }, () => Array(months).fill(0));
@@ -964,6 +988,7 @@
                         debtScheduleByCompany[i].interest[y][mo] += interest;
                         debtScheduleByCompany[i].principal[y][mo] += principal;
                         netCashFlow[y][mo] -= monthlyDebtPmt;
+                        
 
                     }
                     totalCashThisRun += upfrontCash;
@@ -1030,6 +1055,16 @@
             0
             );
             cashRequiredRuns.push(totalEquityThisRun);
+
+            for (let y = 0; y < years; y++) {
+                const totalAnnualEBITDA = ebitda[y].reduce((sum, val) => sum + val, 0);
+                const totalAnnualDebtService = totalDebtServiceByYear[y][run];
+              
+                rollupDSCRByYear[y][run] = totalAnnualDebtService === 0
+                  ? null
+                  : totalAnnualEBITDA / totalAnnualDebtService;
+              }
+              
         }            
 
 
@@ -1083,6 +1118,7 @@
                 equityPerCompany,
                 debtUsedByYear,
                 opsCashUsedByYear,
+                rollupDSCRByYear, 
                 cashRequiredRuns, 
                 numCompanies,
                 years,
