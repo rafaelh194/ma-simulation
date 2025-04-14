@@ -1007,7 +1007,10 @@
       document.getElementById("resultsTable").innerHTML += html;
     }
 
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('generateCompaniesBtn').addEventListener('click', generateCompanies);
+  document.querySelector('button[onclick*="runSimulation"]')?.addEventListener('click', runSimulation);
+
     window.generateCompanies = generateCompanies;
     window.runSimulation = runSimulation;
     window.toggleCompany = toggleCompany;
