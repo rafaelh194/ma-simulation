@@ -268,6 +268,8 @@
       companyRunData,
       sellerDebtScheduleByCompany,
       debtScheduleByCompany,
+      equityPerYear,
+      equityPerCompany,
       numCompanies,
       years,
       months
@@ -950,6 +952,8 @@
       companyRunData,
       sellerDebtScheduleByCompany,
       debtScheduleByCompany,
+      equityPerYear,
+      equityPerCompany,
       numCompanies,
       years,
       months
