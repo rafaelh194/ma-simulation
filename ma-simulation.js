@@ -1007,6 +1007,7 @@
       document.getElementById("resultsTable").innerHTML += html;
     }
 
+window.addEventListener('DOMContentLoaded', () => {
     window.generateCompanies = generateCompanies;
     window.runSimulation = runSimulation;
     window.toggleCompany = toggleCompany;
@@ -1015,3 +1016,4 @@
     window.toggleTable = toggleTable;
     window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
     window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
+});
