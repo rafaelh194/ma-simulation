@@ -367,17 +367,28 @@
             boxmode: "group"
         });
 
-        // Attach valuation Company Data export button
+  
+
+
+        // Clear previous export buttons if they exist
+        const chartsSection = document.getElementById("chartsSection");
+        const prevButtons = chartsSection.querySelectorAll(".export-btn");
+        prevButtons.forEach(btn => btn.remove());
+
+        // Create Company CSV Export button
         const exportAllBtn = document.createElement("button");
         exportAllBtn.textContent = "Export Companies Data CSV";
+        exportAllBtn.className = "export-btn";
         exportAllBtn.onclick = () => exportCompanyRunDataCSV(companyRunData);
-        document.getElementById("chartsSection").appendChild(exportAllBtn);
+        chartsSection.appendChild(exportAllBtn);
 
-        // Attach valuation Debt export button
+        // Create Debt CSV Export button
         const exportAllDebtBtn = document.createElement("button");
         exportAllDebtBtn.textContent = "Export Debt Data CSV";
-        exportAllDebtBtn.onclick = () => exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompany, numCompanies, years, months);      ;
-        document.getElementById("chartsSection").appendChild(exportAllDebtBtn);
+        exportAllDebtBtn.className = "export-btn";
+        exportAllDebtBtn.onclick = () => exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompany, numCompanies, years, months);
+        chartsSection.appendChild(exportAllDebtBtn);
+
 
         
         // Valuation by Company (All Runs)
@@ -434,22 +445,29 @@
             yaxis: { title: "Equity ($)" }
         });
 
-        const sortedEquity = [...cashRequiredRuns].sort((a, b) => a - b);
-        const equityCDF = sortedEquity.map((v, i) => ({ x: v, y: (i + 1) / sortedEquity.length }));
-
+        
+        // Equity Required – CDF
+        const totalEquityPerRun = equityPerYear[0].map((_, runIdx) =>
+            equityPerYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
+        );
+        const equityCDFSorted = [...totalEquityPerRun].sort((a, b) => a - b);
+        const equityCDF = equityCDFSorted.map((val, idx) => ({
+            x: val,
+            y: (idx + 1) / totalEquityPerRun.length
+        }));
+        
         Plotly.newPlot("equityCDFChart", [{
-        x: equityCDF.map(p => p.x),
-        y: equityCDF.map(p => p.y),
-        type: "scatter",
-        mode: "lines",
-        line: { color: "rgba(255, 99, 132, 1)" }
+            x: equityCDF.map(p => p.x),
+            y: equityCDF.map(p => p.y),
+            type: "scatter",
+            mode: "lines",
+            line: { color: "rgba(255, 99, 132, 1)" }
         }], {
-        title: "Cumulative Distribution – Total Equity Required (CDF)",
-        xaxis: { title: "Equity Required ($)" },
-        yaxis: { title: "Cumulative Probability", range: [0, 1] },
-        margin: { t: 50 }
+            title: "Cumulative Distribution – Total Equity Required",
+            xaxis: { title: "Total Equity ($)" },
+            yaxis: { title: "Probability", range: [0, 1] },
+            margin: { t: 60 }
         });
-
 
 
 
@@ -844,13 +862,7 @@
                     totalCashThisRun += upfrontCash;
                     valuationRunsByYear[acqOffset][run] += valuation;
 
-
-                    const totalEquityThisRun = equityPerYear.reduce(
-                        (sum, yearArray) => sum + (yearArray[run] || 0),
-                        0
-                      );
-                      cashRequiredRuns.push(totalEquityThisRun);
-                      
+                     
 
                     companyRunData.push({
                         run: run + 1,
@@ -890,21 +902,18 @@
             let totalEquityRequired = 0;
             let runningBalance = 0;
 
-            // Step 1: Sum all negative months (cash shortfalls) AND track running balance
             for (let y = 0; y < years; y++) {
-                for (let m = 0; m < months; m++) {
-                    runningBalance += netCashFlow[y][m];
-
-                if (netCashFlow[y][m] < 0) {
-                    totalEquityRequired += -netCashFlow[y][m]; // add shortfall
-                }
-
+              let equityInjectedThisYear = 0;
+              for (let m = 0; m < months; m++) {
+                runningBalance += netCashFlow[y][m];
+            
                 if (runningBalance < minOpCash) {
-                    const shortfall = minOpCash - runningBalance;
-                    totalEquityRequired += shortfall;
-                    runningBalance += shortfall; // simulate equity injection to restore balance
+                  const shortfall = minOpCash - runningBalance;
+                  equityInjectedThisYear += shortfall;
+                  runningBalance += shortfall;
                 }
-                }
+              }
+              cashRequiredPerYear[y].push(equityInjectedThisYear);
             }
 
             // Step 2: Apply SF capital offset once
@@ -916,20 +925,27 @@
             // Track cash required per year (boxplot)
             if (!window.cashRequiredPerYear) window.cashRequiredPerYear = Array.from({ length: years }, () => []);
             for (let y = 0; y < years; y++) {
-                let annualShortfall = 0;
-                let runningBalance = 0;
-                let minBalance = 0;
-                
-                for (let m = 0; m < months; m++) {
+              let equityInjectedThisYear = 0;
+              for (let m = 0; m < months; m++) {
                 runningBalance += netCashFlow[y][m];
-                if (runningBalance < minBalance) {
-                    minBalance = runningBalance;
+            
+                if (runningBalance < minOpCash) {
+                  const shortfall = minOpCash - runningBalance;
+                  equityInjectedThisYear += shortfall;
+                  runningBalance += shortfall;
                 }
-                }
-
-                const equityRequiredThisYear = -minBalance;
-                cashRequiredPerYear[y].push(equityRequiredThisYear);
+              }
+            
+              // ✅ Track year-by-year equity (boxplot & charts)
+              cashRequiredPerYear[y].push(equityInjectedThisYear);
+              equityPerYear[y][run] = equityInjectedThisYear;
             }
+
+            const totalEquityThisRun = equityPerYear.reduce(
+                (sum, yearArray) => sum + (yearArray[run] || 0),
+                0
+              );
+              cashRequiredRuns.push(totalEquityThisRun);
         }
 
 
