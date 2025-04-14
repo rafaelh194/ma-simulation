@@ -270,7 +270,7 @@
         debtScheduleByCompany,
         equityPerYear,
         equityPerCompany,
-        debtUsedByYear
+        debtUsedByYear,
         cashRequiredRuns, 
         numCompanies,
         years,
@@ -1021,7 +1021,7 @@
                 debtScheduleByCompany,
                 equityPerYear,
                 equityPerCompany,
-                debtUsedByYear
+                debtUsedByYear,
                 cashRequiredRuns, 
                 numCompanies,
                 years,
