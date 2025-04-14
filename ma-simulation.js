@@ -544,7 +544,7 @@
       document.body.removeChild(link);
     }
     ///////
-    let equityPerYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));
+
 
     function runSimulation() {
       const NUM_RUNS = 5000;
@@ -579,7 +579,7 @@
       const sellerDebtScheduleMonthly = Array.from({ length: years }, () => Array(months).fill(0));
 
       let equityPerCompany = Array.from({ length: numCompanies }, () => []);
-      
+      let equityPerYear = Array.from({ length: years }, () => Array(NUM_RUNS).fill(0));      
 
       const sellerDebtScheduleByCompany = Array.from({ length: numCompanies }, () =>
         Array.from({ length: years }, () => Array(months).fill(0))
