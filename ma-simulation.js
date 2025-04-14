@@ -528,7 +528,7 @@
     ///////
    
     function runSimulation() {
-      const NUM_RUNS = 1000;
+      const NUM_RUNS = 5000;
       const simulationStartYear = 2025;
       const years = 7;
       const months = 12;
@@ -577,9 +577,9 @@
         let totalCashThisRun = 0;
         let netCashFlow = Array.from({ length: years }, () => Array(months).fill(0));
         let usedInitialCashBS = false;
-        let sfCapitalRemaining = +document.getElementById('sf_capital_left').value * 1000 || 0;
-        const initialCashBS = +document.getElementById('initial_cash').value * 1000 || 0;
-        let rollupCashBalance = initialCashBS + sfCapitalRemaining;
+        let sfCapitalRemaining = +document.getElementById('sf_capital_left').value || 0;
+        const initialCashBS = +document.getElementById('initial_cash').value || 0;
+        let rollupCashBalance = -initialCashBS + sfCapitalRemaining;
 
 
         for (let i = 0; i < numCompanies; i++) {
