@@ -254,11 +254,11 @@ function generateFinancingStrategy(simulationStartYear = 2025) {
         <!-- Column 1 -->
         <div class="input-group">
           <label>Min. Req. DSCR</label>
-          <input id="fund_dscr_min_${i}" type="number" value="1.2" step="0.1">
+          <input id="fund_dscr_min_${i}" type="number" value="2" step="0.1">
         </div>
         <div class="input-group">
           <label>Debt Min (%)</label>
-          <input id="fund_debt_min_${i}" type="number" value="20">
+          <input id="fund_debt_min_${i}" type="number" value="0">
         </div>
         <div class="input-group">
           <label>Debt ML (%)</label>
@@ -266,14 +266,14 @@ function generateFinancingStrategy(simulationStartYear = 2025) {
         </div>
         <div class="input-group">
           <label>Debt Max (%)</label>
-          <input id="fund_debt_max_${i}" type="number" value="40">
+          <input id="fund_debt_max_${i}" type="number" value="100">
         </div>
       </div>
       <div class="row">
         <!-- Column 2 -->
         <div class="input-group">
           <label>Rate (%)</label>
-          <input id="fund_rate_${i}" type="number" value="5">
+          <input id="fund_rate_${i}" type="number" value="8">
         </div>
         <div class="input-group">
           <label>Transaction Fee (%)</label>
@@ -285,7 +285,7 @@ function generateFinancingStrategy(simulationStartYear = 2025) {
         </div>
         <div class="input-group">
           <label>Min OP Cash ($K)</label>
-          <input id="fund_cash_min_${i}" type="number" value="0">
+          <input id="fund_cash_min_${i}" type="number" value="100">
         </div>
       </div>
     `;
@@ -442,6 +442,7 @@ function renderCharts(
 	opsCashUsedByYear,
 	cashRequiredRuns,
 	numCompanies,
+    debtUsedByCompany,
     dscrByYear,
 	years,
 	months
@@ -623,7 +624,6 @@ function renderCharts(
 		}
 	});
 
-
     const dscrBoxByYear = dscrByYear.map((vals, idx) => ({
         y: vals,
         type: 'box',
@@ -649,7 +649,30 @@ function renderCharts(
     });
 
 
+    const debtBoxByCompany = debtUsedByCompany.map((vals, idx) => ({
+        y: vals,
+        type: 'box',
+        name: `Company ${idx + 1}`,
+        boxpoints: false,
+        width: 0.5,
+        marker: {
+            color: 'rgba(54, 162, 235, 0.6)'
+        },
+        line: {
+            color: 'rgba(54, 162, 235, 1)'
+        }
+    }));
     
+    Plotly.newPlot("debtByCompanyChart", debtBoxByCompany, {
+        title: "Debt Used by Company (All Runs)",
+        yaxis: {
+            title: "Debt Used ($)"
+        },
+        margin: {
+            t: 60
+        },
+        boxmode: "group"
+    });
 
 
 
@@ -979,6 +1002,14 @@ function runSimulation() {
 	const valuationRunsByYear = Array.from({
 		length: years
 	}, () => Array(NUM_RUNS).fill(0));
+
+    const debtUsedByCompany = Array.from({ 
+        length: numCompanies
+    }, () => Array(NUM_RUNS).fill(0));
+
+
+
+
 	const cashByYear = Array(years).fill(0);
 	const companyRunData = [];
 	const minOpCash = 0;
@@ -1190,7 +1221,9 @@ function runSimulation() {
             const debtPctSim = sampleTriangular(debtMin, debtML, debtMax);
             let proposedDebtAmount = (debtPctSim / 100) * valuation;
 
-            const ebitdaAnnual = consolidatedEBITDAThisRun + baseAnnualEBITDA;
+            const ebitdaAnnual = (i === 0)
+                ? baseAnnualEBITDA
+                : consolidatedEBITDAThisRun + baseAnnualEBITDA;
             const monthlyPmt = (monthlyRateDebt === 0)
                 ? proposedDebtAmount / debtTermMonths
                 : proposedDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
@@ -1215,6 +1248,8 @@ function runSimulation() {
 
             annualDebtServiceSoFar += actualMonthlyPmt * 12;
             debtUsedByYear[acqOffset][run] += debtAmount;
+            debtUsedByCompany[i][run] = debtAmount;
+
 
 
 			// Transaction Fee (based on debt)
@@ -1362,7 +1397,7 @@ function runSimulation() {
 				cash_needed: upfrontCash.toFixed(2),
 				...synergies
 			});
-
+            annualDebtServiceSoFar += proposedAnnualDebtService;
             consolidatedEBITDAThisRun += baseAnnualEBITDA;
 		}
 
@@ -1466,6 +1501,7 @@ function runSimulation() {
 		opsCashUsedByYear,
 		cashRequiredRuns,
 		numCompanies,
+        debtUsedByCompany,
         dscrByYear,
 		years,
 		months
