@@ -253,8 +253,8 @@ function generateFinancingStrategy(simulationStartYear = 2025) {
       <div class="row">
         <!-- Column 1 -->
         <div class="input-group">
-          <label>DSCR Max</label>
-          <input id="fund_dscr_max_${i}" type="number" value="1.2" step="0.1">
+          <label>Min. Req. DSCR</label>
+          <input id="fund_dscr_min_${i}" type="number" value="1.2" step="0.1">
         </div>
         <div class="input-group">
           <label>Debt Min (%)</label>
@@ -1178,7 +1178,7 @@ function runSimulation() {
 			const debtTerm = +document.getElementById(`fund_term_${i}`).value || 60;
 
 			// Simulate Debt %
-            const dscrMax = +document.getElementById(`fund_dscr_max_${i}`).value || 0;
+            const dscrMin = +document.getElementById(`fund_dscr_min_${i}`).value || 0;
             const debtMin = +document.getElementById(`fund_debt_min_${i}`).value || 0;
             const debtML  = +document.getElementById(`fund_debt_ml_${i}`).value || 0;
             const debtMax = +document.getElementById(`fund_debt_max_${i}`).value || 0;
@@ -1198,8 +1198,8 @@ function runSimulation() {
             const proposedAnnualDebtService = monthlyPmt * 12;
             const totalDebtService = proposedAnnualDebtService + annualDebtServiceSoFar;
 
-            if (dscrMax > 0 && (ebitdaAnnual / totalDebtService) < dscrMax) {
-                const maxAllowedService = ebitdaAnnual / dscrMax;
+            if (dscrMin > 0 && (ebitdaAnnual / totalDebtService) < dscrMin) {
+                const maxAllowedService = ebitdaAnnual / dscrMin;
                 const maxServiceForNewDebt = Math.max(0, maxAllowedService - annualDebtServiceSoFar);
 
                 proposedDebtAmount = (monthlyRateDebt === 0)
