@@ -1190,14 +1190,11 @@ function runSimulation() {
             const debtPctSim = sampleTriangular(debtMin, debtML, debtMax);
             let proposedDebtAmount = (debtPctSim / 100) * valuation;
 
-            const annualDebtService = monthlyPmt * 12;
-            let finalDebtAmount = proposedDebtAmount;
-
             const ebitdaAnnual = consolidatedEBITDAThisRun + baseAnnualEBITDA;
             const monthlyPmt = (monthlyRateDebt === 0)
                 ? proposedDebtAmount / debtTermMonths
                 : proposedDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
-
+  
             const proposedAnnualDebtService = monthlyPmt * 12;
             const totalDebtService = proposedAnnualDebtService + annualDebtServiceSoFar;
 
