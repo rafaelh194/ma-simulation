@@ -1327,7 +1327,7 @@ function runSimulation() {
                 ? debtAmount / debtTermMonths
                 : debtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
 
-            annualDebtServiceSoFar += actualMonthlyPmt * 12;
+//            annualDebtServiceSoFar += actualMonthlyPmt * 12;
             debtUsedByYear[acqOffset][run] += debtAmount;
             debtUsedByCompany[i][run] = debtAmount;
 
