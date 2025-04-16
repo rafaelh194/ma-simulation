@@ -1306,6 +1306,11 @@ function runSimulation() {
   
             const proposedAnnualDebtService = monthlyPmt * 12;
             const totalDebtService = proposedAnnualDebtService + annualDebtServiceSoFar;
+            const actualDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 0;
+
+            if (!dscrByYear[acqOffset]) dscrByYear[acqOffset] = [];
+            if (!dscrByYear[acqOffset][run]) dscrByYear[acqOffset][run] = actualDSCR;
+
 
             if (dscrMin > 0 && (ebitdaAnnual / totalDebtService) < dscrMin) {
                 const maxAllowedService = ebitdaAnnual / dscrMin;
