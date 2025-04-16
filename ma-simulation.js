@@ -1250,6 +1250,7 @@ function runSimulation() {
 			const rolloverML = +document.getElementById(`c${i}_rollover_ml`).value || 0;
 			const rolloverMax = +document.getElementById(`c${i}_rollover_max`).value || 0;
 			const rolloverPct = sampleTriangular(rolloverMin, rolloverML, rolloverMax);
+            const rolloverAmount = valuation * (rolloverPct / 100);
 
 			// Earnout
 			const earnoutMin = +document.getElementById(`c${i}_earnout_min`).value || 0;
@@ -1294,7 +1295,8 @@ function runSimulation() {
             
             const monthlyRateDebt = debtRateAnnual / 12;
 
-            const debtPctSim = sampleTriangular(debtMin, debtML, debtMax);
+            const debtPctSim = Math.min(100, sampleTriangular(debtMin, debtML, debtMax));
+
             let proposedDebtAmount = (debtPctSim / 100) * valuation;
             proposedDebtAmount = Math.min(proposedDebtAmount, valuation);
 
@@ -1330,7 +1332,6 @@ function runSimulation() {
                 ? debtAmount / debtTermMonths
                 : debtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
 
-//            annualDebtServiceSoFar += actualMonthlyPmt * 12;
             debtUsedByYear[acqOffset][run] += debtAmount;
             debtUsedByCompany[i][run] = debtAmount;
 
@@ -1347,13 +1348,13 @@ function runSimulation() {
 				usedInitialCashBS = true;
 			}
 
-			const upfrontCash =
-				valuation * (1 - rolloverPct / 100 - earnoutPct / 100 - sellerPct / 100 - debtPct / 100) +
-				feeAmount +
-				minOpCash +
-				extraInitialCash;
-			let equityUsedForThisAcq = upfrontCash;
 
+            
+            const fundingGap = valuation - (rolloverAmount + sellerAmount + earnoutAmount + debtAmount);
+            const upfrontCash = fundingGap + feeAmount + minOpCash + extraInitialCash;
+            
+			let equityUsedForThisAcq = upfrontCash;
+            
 			if (rollupCashBalance >= upfrontCash) {
 				rollupCashBalance -= upfrontCash;
 				equityUsedForThisAcq = 0;
