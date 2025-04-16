@@ -572,7 +572,7 @@ function renderCharts(
 	});
 
 	Plotly.newPlot("ebitdaBoxPlot", boxData, {
-		title: "Annual EBITDA (All Runs)",
+		title: "Annual EBITDA",
 		yaxis: {
 			title: "EBITDA ($)",
 			zeroline: false
@@ -618,7 +618,7 @@ function renderCharts(
 	}));
 
 	Plotly.newPlot("debtByYearChart", debtBoxByYear, {
-		title: "Debt Used by Year (All Runs)",
+		title: "Debt Used by Year",
 		yaxis: {
 			title: "Debt ($)"
 		}
@@ -639,7 +639,7 @@ function renderCharts(
     }));
     
     Plotly.newPlot("dscrByYearChart", dscrBoxByYear, {
-        title: "DSCR by Year (All Runs)",
+        title: "DSCR by Year",
         yaxis: {
             title: "DSCR"
         },
@@ -664,7 +664,7 @@ function renderCharts(
     }));
     
     Plotly.newPlot("debtByCompanyChart", debtBoxByCompany, {
-        title: "Debt Used by Company (All Runs)",
+        title: "Debt Used by Company",
         yaxis: {
             title: "Debt Used ($)"
         },
@@ -695,6 +695,13 @@ function renderCharts(
 	exportAllDebtBtn.onclick = () => exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompany, numCompanies, years, months);
 	chartsSection.appendChild(exportAllDebtBtn);
 
+    	// Create Debt CSV Export button
+	const exportAllDebtKPIBtn = document.createElement("button");
+	exportAllDebtKPIBtn.textContent = "Export Debt KPI's Data CSV";
+	exportAllDebtKPIBtn.className = "export-btn";
+	exportAllDebtKPIBtn.onclick = () => exportKPIDataCSV(companyRunData, equityPerCompany, debtUsedByCompany, dscrByYear, numCompanies, NUM_RUNS);
+	chartsSection.appendChild(exportAllDebtKPIBtn);
+
 
 
 	// Valuation by Company (All Runs)
@@ -722,7 +729,7 @@ function renderCharts(
 	}));
 
 	Plotly.newPlot("valuationByCompanyChart", valuationBoxPerCompany, {
-		title: "Valuation Distribution by Company (All Runs)",
+		title: "Valuation Distribution by Company",
 		yaxis: {
 			title: "Valuation ($)"
 		},
@@ -757,7 +764,7 @@ function renderCharts(
 		width: 0.5
 	}));
 	Plotly.newPlot("equityByCompanyChart", equityBoxByCompany, {
-		title: "Equity Required by Company (All Runs)",
+		title: "Equity Required by Company",
 		yaxis: {
 			title: "Equity ($)"
 		}
@@ -954,6 +961,74 @@ function exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompa
 	link.click();
 	document.body.removeChild(link);
 }
+
+
+function exportKPIDataCSV(companyRunData, equityPerCompany, debtUsedByCompany, dscrByYear, numCompanies, NUM_RUNS) {
+    const rows = [];
+
+    for (let run = 0; run < NUM_RUNS; run++) {
+        for (let i = 0; i < numCompanies; i++) {
+            const data = companyRunData.find(d => d.run === run + 1 && d.company === i + 1);
+            if (!data) continue;
+
+            const equity = equityPerCompany[i][run] || 0;
+            const debt = debtUsedByCompany[i][run] || 0;
+            const ebitda = parseFloat(data.base_ebitda) || 0;
+            const valuation = parseFloat(data.valuation) || 0;
+            const revenue = parseFloat(data.revenue) || 0;
+
+            const dscr = (() => {
+                const yearIndex = data.acquisition_year - 2025;
+                return dscrByYear?.[yearIndex]?.[run] ?? null;
+            })();
+
+            const evToRevenue = revenue > 0 ? valuation / revenue : null;
+            const ebitdaMargin = revenue > 0 ? ebitda / revenue : null;
+            const debtToEbitda = ebitda > 0 ? debt / ebitda : null;
+            const equityPctOfEV = valuation > 0 ? equity / valuation : null;
+            const netCashOutlay = equity + (parseFloat(data.cash_needed) - equity);
+
+            rows.push({
+                run: run + 1,
+                company: i + 1,
+                year: data.acquisition_year,
+                revenue,
+                base_ebitda: ebitda,
+                valuation,
+                multiple: data.multiple,
+                ev_to_revenue: evToRevenue,
+                ebitda_margin: ebitdaMargin,
+                debt_used: debt,
+                debt_pct: data.debt_pct,
+                debt_to_ebitda: debtToEbitda,
+                equity_injected: equity,
+                equity_pct_of_ev: equityPctOfEV,
+                ops_cash_used: parseFloat(data.cash_needed) - equity,
+                net_cash_outlay: netCashOutlay,
+                rollover_pct: data.rollover,
+                earnout_pct: data.earnout,
+                seller_pct: data.seller,
+                fee_amount: data.fee_amount,
+                extra_exp: data.extra_exp,
+                dscr
+            });
+        }
+    }
+    
+        const csvContent = [
+            Object.keys(rows[0]).join(","),
+            ...rows.map(row => Object.values(row).join(","))
+        ].join("\n");
+    
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", "Company_KPI_Data.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 ///////
 
 
@@ -1612,4 +1687,5 @@ document.addEventListener('DOMContentLoaded', () => {
 	window.toggleTable = toggleTable;
 	window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
 	window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
+    window.exportKPIDataCSV = exportKPIDataCSV;
 });
