@@ -1495,7 +1495,6 @@ function runSimulation() {
 				...synergies
 			});
             annualDebtServiceSoFar += proposedAnnualDebtService;
-            consolidatedEBITDAThisRun += baseAnnualEBITDA;
 		}
 
 		for (let y = 0; y < years; y++) {
