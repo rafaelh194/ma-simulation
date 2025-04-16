@@ -1146,7 +1146,7 @@ function runSimulation() {
 		let usedInitialCashBS = false;
         const initialCashBS = +document.getElementById('initial_cash').value || 0;
         let sfCapitalRemaining = +document.getElementById('sf_capital_left').value || 0;
-        let rollupCashBalance = -initialCashBS + sfCapitalRemaining;
+        let rollupCashBalance = initialCashBS + sfCapitalRemaining;
 
 
         let baseEBITDAByCompany = Array(numCompanies).fill(0);
@@ -1308,8 +1308,15 @@ function runSimulation() {
 
             for (let j = 0; j < i; j++) {
                 const prevAcqYear = +document.getElementById(`c${j}_year`).value;
-                if (prevAcqYear <= acqYear) {
-                    ebitdaAnnual += adjustedEBITDAByCompanyYear[j][acqOffset]; // previous companies adjusted
+                const prevAcqMonth = +document.getElementById(`c${j}_month`).value;
+                
+                // Include company if acquired before current one, even in same year
+                if (
+                    prevAcqYear < acqYear || 
+                    (prevAcqYear === acqYear && prevAcqMonth < acqMonth)
+                ) {
+                    const prevAcqOffset = prevAcqYear - simulationStartYear;
+                    ebitdaAnnual += adjustedEBITDAByCompanyYear[j][prevAcqOffset];
                 }
             }
             
