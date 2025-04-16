@@ -1329,18 +1329,47 @@ function runSimulation() {
             const actualDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 0;
 
             if (!dscrByYear[acqOffset]) dscrByYear[acqOffset] = [];
-            if (!dscrByYear[acqOffset][run]) dscrByYear[acqOffset][run] = actualDSCR;
+
+            // DEBUG LOG for DSCR issues on first company
+            if ((actualDSCR < 0 || isNaN(actualDSCR) || !isFinite(actualDSCR))) {
+                console.warn(`⚠️ DSCR issue in run ${run + 1}, company ${i + 1}`, {
+                    rev,
+                    ebitdaPct,
+                    baseAnnualEBITDA,
+                    proposedDebtAmount,
+                    proposedAnnualDebtService,
+                    actualDSCR,
+                    ebitdaAnnual,
+                    totalDebtService
+                });
+            }
+
 
 
             if (dscrMin > 0 && (ebitdaAnnual / totalDebtService) < dscrMin) {
                 const maxAllowedService = ebitdaAnnual / dscrMin;
                 const maxServiceForNewDebt = Math.max(0, maxAllowedService - annualDebtServiceSoFar);
-
+            
                 proposedDebtAmount = (monthlyRateDebt === 0)
                     ? maxServiceForNewDebt * (debtTermMonths / 12)
                     : maxServiceForNewDebt / (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
             }
+            
+            // Always cap to valuation
             proposedDebtAmount = Math.min(proposedDebtAmount, valuation);
+            
+            // Recalculate final DSCR based on adjusted amount
+            const adjustedMonthlyPmt = (monthlyRateDebt === 0)
+                ? proposedDebtAmount / debtTermMonths
+                : proposedDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+            
+            const adjustedAnnualDebtService = adjustedMonthlyPmt * 12;
+            const adjustedTotalDebtService = adjustedAnnualDebtService + annualDebtServiceSoFar;
+            
+            const adjustedDSCR = adjustedTotalDebtService > 0 ? ebitdaAnnual / adjustedTotalDebtService : 99; // 99 if no debt at all
+            
+            dscrByYear[acqOffset][run] = adjustedDSCR;
+
 
 
             const debtAmount = proposedDebtAmount;
