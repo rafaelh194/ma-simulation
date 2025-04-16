@@ -1149,13 +1149,15 @@ function runSimulation() {
         let rollupCashBalance = -initialCashBS + sfCapitalRemaining;
 
 
-        let consolidatedEBITDAThisRun = 0;
+        let baseEBITDAByCompany = Array(numCompanies).fill(0);
+        let adjustedEBITDAByCompanyYear = Array.from({ length: numCompanies }, () => Array(years).fill(0));        
         let annualDebtServiceSoFar = 0;
 
 		for (let i = 0; i < numCompanies; i++) {
 			const rev = sampleTriangular(+document.getElementById(`c${i}_rev_min`).value, +document.getElementById(`c${i}_rev_ml`).value, +document.getElementById(`c${i}_rev_max`).value);
 			const ebitdaPct = sampleTriangular(+document.getElementById(`c${i}_ebitda_min`).value, +document.getElementById(`c${i}_ebitda_ml`).value, +document.getElementById(`c${i}_ebitda_max`).value) / 100;
             const baseAnnualEBITDA = rev * ebitdaPct;
+            baseEBITDAByCompany[i] = baseAnnualEBITDA;
             const baseCost = rev * (1 - ebitdaPct);
 			const monthlyBaseCost = baseCost / 12;
 
@@ -1163,6 +1165,7 @@ function runSimulation() {
 			const acqMonth = +document.getElementById(`c${i}_month`).value;
 			const extraExp = +document.getElementById(`c${i}_extra_exp`).value || 0;
 			const acqOffset = acqYear - simulationStartYear;
+            
 			if (acqOffset >= years || acqOffset < 0) continue;
 
 			const compSpread = {
@@ -1224,6 +1227,7 @@ function runSimulation() {
 					const adjustedRevenue = baseRev * (1 + synergies.cross + synergies.price - synergies.churn);
 					const adjustedCost = baseCst * (1 - synergies.tech - synergies.shared - synergies.facility);
 					const adjustedEBITDA = adjustedRevenue - adjustedCost - extraExp;
+                    adjustedEBITDAByCompanyYear[i][y] += adjustedEBITDA;
 
 					revenue[y][m] += adjustedRevenue;
 					cost[y][m] += adjustedCost;
@@ -1300,9 +1304,15 @@ function runSimulation() {
             let proposedDebtAmount = (debtPctSim / 100) * valuation;
             proposedDebtAmount = Math.min(proposedDebtAmount, valuation);
 
-            const ebitdaAnnual = (i === 0)
-                ? baseAnnualEBITDA
-                : consolidatedEBITDAThisRun + baseAnnualEBITDA;
+            let ebitdaAnnual = baseEBITDAByCompany[i]; // current company (unadjusted)
+
+            for (let j = 0; j < i; j++) {
+                const prevAcqYear = +document.getElementById(`c${j}_year`).value;
+                if (prevAcqYear <= acqYear) {
+                    ebitdaAnnual += adjustedEBITDAByCompanyYear[j][acqOffset]; // previous companies adjusted
+                }
+            }
+            
             const monthlyPmt = (monthlyRateDebt === 0)
                 ? proposedDebtAmount / debtTermMonths
                 : proposedDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
