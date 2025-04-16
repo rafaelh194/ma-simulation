@@ -1287,7 +1287,6 @@ function runSimulation() {
 			// Seller Financing schedule
 			const acqMonthIndex = (acqYear - simulationStartYear) * 12 + (acqMonth - 1);
 			const sellerTerm = +document.getElementById(`c${i}_seller_term`).value || 60;
-			const debtTerm = +document.getElementById(`fund_term_${i}`).value || 60;
 
 			// Simulate Debt %
             const dscrMin = +document.getElementById(`fund_dscr_min_${i}`).value || 0;
@@ -1326,10 +1325,44 @@ function runSimulation() {
   
             const proposedAnnualDebtService = monthlyPmt * 12;
             const totalDebtService = proposedAnnualDebtService + annualDebtServiceSoFar;
-            const actualDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 0;
+            const preAdjustDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 0;
+
+            if ((preAdjustDSCR < 0 || isNaN(preAdjustDSCR) || !isFinite(preAdjustDSCR))) {
+                console.warn(`⚠️ DSCR issue in run ${run + 1}, company ${i + 1}`, {
+                    rev,
+                    ebitdaPct,
+                    baseAnnualEBITDA,
+                    proposedDebtAmount,
+                    proposedAnnualDebtService,
+                    preAdjustDSCR,
+                    ebitdaAnnual,
+                    totalDebtService
+                });
+            }
+            
 
             if (!dscrByYear[acqOffset]) dscrByYear[acqOffset] = [];
 
+            if (dscrMin > 0 && (ebitdaAnnual / totalDebtService) < dscrMin) {
+                const maxAllowedService = ebitdaAnnual / dscrMin;
+                const maxServiceForNewDebt = Math.max(0, maxAllowedService - annualDebtServiceSoFar);
+            
+                proposedDebtAmount = (monthlyRateDebt === 0)
+                    ? maxServiceForNewDebt * (debtTermMonths / 12)
+                    : maxServiceForNewDebt / (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+            }
+            
+            const debtAmount = proposedDebtAmount;
+            const debtPct = (debtAmount / valuation) * 100;
+
+            const monthlyDebtPmt = (monthlyRateDebt === 0)
+                ? debtAmount / debtTermMonths
+                : debtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+
+            const annualDebtService = monthlyDebtPmt * 12;
+            const actualDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 99;
+
+            
             // DEBUG LOG for DSCR issues on first company
             if ((actualDSCR < 0 || isNaN(actualDSCR) || !isFinite(actualDSCR))) {
                 console.warn(`⚠️ DSCR issue in run ${run + 1}, company ${i + 1}`, {
@@ -1343,44 +1376,12 @@ function runSimulation() {
                     totalDebtService
                 });
             }
-
-
-
-            if (dscrMin > 0 && (ebitdaAnnual / totalDebtService) < dscrMin) {
-                const maxAllowedService = ebitdaAnnual / dscrMin;
-                const maxServiceForNewDebt = Math.max(0, maxAllowedService - annualDebtServiceSoFar);
             
-                proposedDebtAmount = (monthlyRateDebt === 0)
-                    ? maxServiceForNewDebt * (debtTermMonths / 12)
-                    : maxServiceForNewDebt / (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
-            }
-            
-            // Always cap to valuation
-            proposedDebtAmount = Math.min(proposedDebtAmount, valuation);
-            
-            // Recalculate final DSCR based on adjusted amount
-            const adjustedMonthlyPmt = (monthlyRateDebt === 0)
-                ? proposedDebtAmount / debtTermMonths
-                : proposedDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
-            
-            const adjustedAnnualDebtService = adjustedMonthlyPmt * 12;
-            const adjustedTotalDebtService = adjustedAnnualDebtService + annualDebtServiceSoFar;
-            
-            const adjustedDSCR = adjustedTotalDebtService > 0 ? ebitdaAnnual / adjustedTotalDebtService : 99; // 99 if no debt at all
-            
-            dscrByYear[acqOffset][run] = adjustedDSCR;
-
-
-
-            const debtAmount = proposedDebtAmount;
-            const debtPct = (debtAmount / valuation) * 100;
-            const actualMonthlyPmt = (monthlyRateDebt === 0)
-                ? debtAmount / debtTermMonths
-                : debtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+            dscrByYear[acqOffset][run] = actualDSCR;
+            annualDebtServiceSoFar += annualDebtService;
 
             debtUsedByYear[acqOffset][run] += debtAmount;
             debtUsedByCompany[i][run] = debtAmount;
-
 
 
 			// Transaction Fee (based on debt)
@@ -1459,28 +1460,17 @@ function runSimulation() {
 
 			}
 
+            let debtBalance = debtAmount;
+
 			//Debt calculation:
-			const debtRate = +document.getElementById(`fund_rate_${i}`).value || 0;
-			const monthlyDebtPayment = (debtRate / 100 / 12) * debtAmount;
-
-			let debtBalance = debtAmount;
-			const monthlyDebtRate = debtRate / 100 / 12;
-			let monthlyDebtPmt = 0;
-
-			if (monthlyDebtRate === 0) {
-				monthlyDebtPmt = debtAmount / debtTerm;
-			} else {
-				monthlyDebtPmt = debtAmount * (monthlyDebtRate / (1 - Math.pow(1 + monthlyDebtRate, -debtTerm)));
-			}
-
-			for (let m = 0; m < debtTerm; m++) {
+			for (let m = 0; m < debtTermMonths; m++) {
 				const globalMonth = acqMonthIndex + m;
 				if (globalMonth >= years * 12) break;
 
 				const y = Math.floor(globalMonth / 12);
 				const mo = globalMonth % 12;
 
-				const interest = debtBalance * monthlyDebtRate;
+				const interest = debtBalance * monthlyRateDebt;
 				const principal = monthlyDebtPmt - interest;
 				debtBalance -= principal;
 
@@ -1530,7 +1520,7 @@ function runSimulation() {
 				cash_needed: upfrontCash.toFixed(2),
 				...synergies
 			});
-            annualDebtServiceSoFar += proposedAnnualDebtService;
+            
 		}
 
 		for (let y = 0; y < years; y++) {
