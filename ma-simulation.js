@@ -445,7 +445,8 @@ function renderCharts(
     debtUsedByCompany,
     dscrByYear,
 	years,
-	months
+	months,
+    NUM_RUNS 
 ) {
 	const simulationStartYear = 2025;
 	const yearLabels = summary.map((_, i) => (simulationStartYear + i).toString());
@@ -1579,7 +1580,8 @@ function runSimulation() {
         debtUsedByCompany,
         dscrByYear,
 		years,
-		months
+		months,
+        NUM_RUNS
 	);
 
 }
