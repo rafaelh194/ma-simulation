@@ -446,496 +446,549 @@ function renderCharts(
     dscrByYear,
     years,
     months,
-    NUM_RUNS
-) {
-	const simulationStartYear = 2025;
-	const yearLabels = summary.map((_, i) => (simulationStartYear + i).toString());
-
-	const p10 = summary.map(r => r.p10);
-	const p50 = summary.map(r => r.p50);
-	const p90 = summary.map(r => r.p90);
-
-	Plotly.newPlot("ebitdaBandChart", [{
-			x: yearLabels,
-			y: p90,
-			name: "P90",
-			type: "scatter",
-			line: {
-				color: "rgba(75, 192, 192, 1)"
-			},
-			fill: "tonexty"
-		},
-		{
-			x: yearLabels,
-			y: p50,
-			name: "P50",
-			type: "scatter",
-			line: {
-				color: "rgba(54, 162, 235, 1)"
-			},
-			fill: "tonexty"
-		},
-		{
-			x: yearLabels,
-			y: p10,
-			name: "P10",
-			type: "scatter",
-			line: {
-				color: "rgba(255, 99, 132, 1)"
-			}
-		}
-	], {
-		title: "EBITDA Monte Carlo Range (P10–P90)",
-		yaxis: {
-			title: "EBITDA ($)"
-		},
-		margin: {
-			t: 50
-		}
-	});
-
-	const finalYearIndex = summary.length - 1;
-	const finalValues = ebitdaAnnualRuns.map(run => run[finalYearIndex]);
-
-	Plotly.newPlot("finalYearHistogram", [{
-		x: finalValues,
-		type: "histogram",
-		nbinsx: 20,
-		marker: {
-			color: "rgba(153, 102, 255, 0.6)",
-			line: {
-				width: 1,
-				color: "rgba(153, 102, 255, 1)"
-			}
-		}
-	}], {
-		title: "Final Year EBITDA Distribution",
-		xaxis: {
-			title: "EBITDA ($)",
-			tickformat: ",",
-			automargin: true
-		},
-		yaxis: {
-			title: "Count"
-		},
-		bargap: 0.1,
-		margin: {
-			t: 60,
-			b: 60,
-			l: 60,
-			r: 40
-		}
-	});
-
-	const sorted = [...finalValues].sort((a, b) => a - b);
-	const cdf = sorted.map((v, i) => ({
-		x: v,
-		y: (i + 1) / sorted.length
-	}));
-
-	Plotly.newPlot("cdfChart", [{
-		x: cdf.map(p => p.x),
-		y: cdf.map(p => p.y),
-		type: "scatter",
-		mode: "lines",
-		line: {
-			color: "rgba(255, 159, 64, 1)"
-		}
-	}], {
-		title: "Cumulative Probability – Final Year EBITDA (CDF)",
-		xaxis: {
-			title: "EBITDA ($)"
-		},
-		yaxis: {
-			title: "Probability",
-			range: [0, 1]
-		},
-		margin: {
-			t: 50
-		}
-	});
-
-	const boxData = summary.map((_, yearIdx) => {
-		const yearValues = ebitdaAnnualRuns.map(run => run[yearIdx]);
-		return {
-			y: yearValues,
-			type: 'box',
-			name: `${simulationStartYear + yearIdx}`,
-			boxpoints: false,
-			width: 0.6,
-			marker: {
-				color: 'rgba(0, 123, 255, 0.6)'
-			},
-			line: {
-				color: 'rgba(0, 123, 255, 1)'
-			}
-		};
-	});
-
-	Plotly.newPlot("ebitdaBoxPlot", boxData, {
-		title: "Annual EBITDA",
-		yaxis: {
-			title: "EBITDA ($)",
-			zeroline: false
-		},
-		margin: {
-			t: 80
-		},
-		boxmode: "group"
-	});
-
-	const valuationBoxPlots = valuationRunsByYear.map((vals, yearIdx) => ({
-		y: vals,
-		type: 'box',
-		name: `${simulationStartYear + yearIdx}`,
-		boxpoints: false,
-		width: 0.5,
-		marker: {
-			color: 'rgba(40, 167, 69, 0.6)'
-		},
-		line: {
-			color: 'rgba(40, 167, 69, 1)'
-		}
-	}));
-
-	Plotly.newPlot("valuationAndCashChart", valuationBoxPlots, {
-		title: "Valuation Distribution by Acquisition Year",
-		yaxis: {
-			title: "Valuation ($)"
-		},
-		margin: {
-			t: 60
-		},
-		boxmode: "group"
-	});
-
+    NUM_RUNS,
+  ) {
+    const simulationStartYear = 2025;
+    const yearLabels = summary.map((_, i) =>
+      (simulationStartYear + i).toString(),
+    );
+  
+    const p10 = summary.map((r) => r.p10);
+    const p50 = summary.map((r) => r.p50);
+    const p90 = summary.map((r) => r.p90);
+  
+    Plotly.newPlot(
+      "ebitdaBandChart",
+      [
+        {
+          x: yearLabels,
+          y: p90,
+          name: "P90",
+          type: "scatter",
+          line: {
+            color: "rgba(75, 192, 192, 1)",
+          },
+          fill: "tonexty",
+        },
+        {
+          x: yearLabels,
+          y: p50,
+          name: "P50",
+          type: "scatter",
+          line: {
+            color: "rgba(54, 162, 235, 1)",
+          },
+          fill: "tonexty",
+        },
+        {
+          x: yearLabels,
+          y: p10,
+          name: "P10",
+          type: "scatter",
+          line: {
+            color: "rgba(255, 99, 132, 1)",
+          },
+        },
+      ],
+      {
+        title: "EBITDA Monte Carlo Range (P10–P90)",
+        yaxis: {
+          title: "EBITDA ($)",
+        },
+        margin: {
+          t: 50,
+        },
+      },
+    );
+  
+    const finalYearIndex = summary.length - 1;
+    const finalValues = ebitdaAnnualRuns.map((run) => run[finalYearIndex]);
+  
+    Plotly.newPlot(
+      "finalYearHistogram",
+      [
+        {
+          x: finalValues,
+          type: "histogram",
+          nbinsx: 20,
+          marker: {
+            color: "rgba(153, 102, 255, 0.6)",
+            line: {
+              width: 1,
+              color: "rgba(153, 102, 255, 1)",
+            },
+          },
+        },
+      ],
+      {
+        title: "Final Year EBITDA Distribution",
+        xaxis: {
+          title: "EBITDA ($)",
+          tickformat: ",",
+          automargin: true,
+        },
+        yaxis: {
+          title: "Count",
+        },
+        bargap: 0.1,
+        margin: {
+          t: 60,
+          b: 60,
+          l: 60,
+          r: 40,
+        },
+      },
+    );
+  
+    const sorted = [...finalValues].sort((a, b) => a - b);
+    const cdf = sorted.map((v, i) => ({
+      x: v,
+      y: (i + 1) / sorted.length,
+    }));
+  
+    Plotly.newPlot(
+      "cdfChart",
+      [
+        {
+          x: cdf.map((p) => p.x),
+          y: cdf.map((p) => p.y),
+          type: "scatter",
+          mode: "lines",
+          line: {
+            color: "rgba(255, 159, 64, 1)",
+          },
+        },
+      ],
+      {
+        title: "Cumulative Probability – Final Year EBITDA (CDF)",
+        xaxis: {
+          title: "EBITDA ($)",
+        },
+        yaxis: {
+          title: "Probability",
+          range: [0, 1],
+        },
+        margin: {
+          t: 50,
+        },
+      },
+    );
+  
+    const boxData = summary.map((_, yearIdx) => {
+      const yearValues = ebitdaAnnualRuns.map((run) => run[yearIdx]);
+      return {
+        y: yearValues,
+        type: "box",
+        name: `${simulationStartYear + yearIdx}`,
+        boxpoints: false,
+        width: 0.6,
+        marker: {
+          color: "rgba(0, 123, 255, 0.6)",
+        },
+        line: {
+          color: "rgba(0, 123, 255, 1)",
+        },
+      };
+    });
+  
+    Plotly.newPlot("ebitdaBoxPlot", boxData, {
+      title: "Annual EBITDA",
+      yaxis: {
+        title: "EBITDA ($)",
+        zeroline: false,
+      },
+      margin: {
+        t: 80,
+      },
+      boxmode: "group",
+    });
+  
+    const valuationBoxPlots = valuationRunsByYear.map((vals, yearIdx) => ({
+      y: vals,
+      type: "box",
+      name: `${simulationStartYear + yearIdx}`,
+      boxpoints: false,
+      width: 0.5,
+      marker: {
+        color: "rgba(40, 167, 69, 0.6)",
+      },
+      line: {
+        color: "rgba(40, 167, 69, 1)",
+      },
+    }));
+  
+    Plotly.newPlot("valuationAndCashChart", valuationBoxPlots, {
+      title: "Valuation Distribution by Acquisition Year",
+      yaxis: {
+        title: "Valuation ($)",
+      },
+      margin: {
+        t: 60,
+      },
+      boxmode: "group",
+    });
+  
     //-- Debt by Year
-	const debtBoxByYear = debtUsedByYear.map((vals, idx) => ({
-		y: vals,
-		type: 'box',
-		name: `Year ${simulationStartYear + idx}`,
-		boxpoints: false,
-		width: 0.5
-	}));
-
-	Plotly.newPlot("debtByYearChart", debtBoxByYear, {
-		title: "Debt Used by Year",
-		yaxis: {
-			title: "Debt ($)"
-		}
-	});
-
+    const debtBoxByYear = debtUsedByYear.map((vals, idx) => ({
+      y: vals,
+      type: "box",
+      name: `Year ${simulationStartYear + idx}`,
+      boxpoints: false,
+      width: 0.5,
+    }));
+  
+    Plotly.newPlot("debtByYearChart", debtBoxByYear, {
+      title: "Debt Used by Year",
+      yaxis: {
+        title: "Debt ($)",
+      },
+    });
+  
     //-- Debt by Company
     const debtBoxByCompany = debtUsedByCompany.map((vals, idx) => ({
-        y: vals,
-        type: 'box',
-        name: `Company ${idx + 1}`,
-        boxpoints: false,
-        width: 0.5
+      y: vals,
+      type: "box",
+      name: `Company ${idx + 1}`,
+      boxpoints: false,
+      width: 0.5,
     }));
-    
+  
     Plotly.newPlot("debtByCompanyChart", debtBoxByCompany, {
-        title: "Debt Used by Company",
-        yaxis: { title: "Debt ($)" }
+      title: "Debt Used by Company",
+      yaxis: { title: "Debt ($)" },
     });
-
+  
     // === DSCR Over Time (Average per year)
-    const avgDSCRByYear = dscrByYear.map(yearArr => {
-        const valid = yearArr.filter(val => isFinite(val));
-        const sum = valid.reduce((a, b) => a + b, 0);
-        return valid.length > 0 ? sum / valid.length : 99;
+    const avgDSCRByYear = dscrByYear.map((yearArr) => {
+      const valid = yearArr.filter((val) => isFinite(val));
+      const sum = valid.reduce((a, b) => a + b, 0);
+      return valid.length > 0 ? sum / valid.length : 99;
     });
-
+  
     const dscrTrace = {
-        x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
-        y: avgDSCRByYear,
-        type: 'scatter',
-        mode: 'lines+markers',
-        name: 'DSCR'
+      x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
+      y: avgDSCRByYear,
+      type: "scatter",
+      mode: "lines+markers",
+      name: "DSCR",
     };
-
-    Plotly.newPlot('dscrChart', [dscrTrace], {
-        title: "Average DSCR Over Time",
-        yaxis: { title: "DSCR", range: [0, Math.max(...avgDSCRByYear, 2) + 0.5] },
-        xaxis: { title: "Year" }
+  
+    Plotly.newPlot("dscrChart", [dscrTrace], {
+      title: "Average DSCR Over Time",
+      yaxis: { title: "DSCR", range: [0, Math.max(...avgDSCRByYear, 2) + 0.5] },
+      xaxis: { title: "Year" },
     });
-
+  
     // === Chart 3: Equity vs Ops Cash per Year (Bar)
-    const equityPerYearAvg = equityPerYear.map(arr => arr.reduce((a, b) => a + b, 0) / NUM_RUNS);
-    const opsCashPerYearAvg = opsCashUsedByYear.map(arr => arr.reduce((a, b) => a + b, 0) / NUM_RUNS);
-
+    const equityPerYearAvg = equityPerYear.map(
+      (arr) => arr.reduce((a, b) => a + b, 0) / NUM_RUNS,
+    );
+    const opsCashPerYearAvg = opsCashUsedByYear.map(
+      (arr) => arr.reduce((a, b) => a + b, 0) / NUM_RUNS,
+    );
+  
     const equityBar = {
-        x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
-        y: equityPerYearAvg,
-        name: 'Equity',
-        type: 'bar'
+      x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
+      y: equityPerYearAvg,
+      name: "Equity",
+      type: "bar",
     };
-
+  
     const opsBar = {
-        x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
-        y: opsCashPerYearAvg,
-        name: 'Ops Cash',
-        type: 'bar'
+      x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
+      y: opsCashPerYearAvg,
+      name: "Ops Cash",
+      type: "bar",
     };
-
-    Plotly.newPlot('fundingStackChart', [equityBar, opsBar], {
-        barmode: 'stack',
-        title: 'Funding Source per Year',
-        yaxis: { title: "Amount ($)" }
+  
+    Plotly.newPlot("fundingStackChart", [equityBar, opsBar], {
+      barmode: "stack",
+      title: "Funding Source per Year",
+      yaxis: { title: "Amount ($)" },
     });
-    }
-
-
-
-	// Clear previous export buttons if they exist
-	const chartsSection = document.getElementById("chartsSection");
-	const prevButtons = chartsSection.querySelectorAll(".export-btn");
-	prevButtons.forEach(btn => btn.remove());
-
-	// Create Company CSV Export button
-	const exportAllBtn = document.createElement("button");
-	exportAllBtn.textContent = "Export Companies Data CSV";
-	exportAllBtn.className = "export-btn";
-	exportAllBtn.onclick = () => exportCompanyRunDataCSV(companyRunData);
-	chartsSection.appendChild(exportAllBtn);
-
-	// Create Debt CSV Export button
-	const exportAllDebtBtn = document.createElement("button");
-	exportAllDebtBtn.textContent = "Export Debt Data CSV";
-	exportAllDebtBtn.className = "export-btn";
-	exportAllDebtBtn.onclick = () => exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompany, numCompanies, years, months);
-	chartsSection.appendChild(exportAllDebtBtn);
-
-    // Create Debt CSV Export button
-	const exportAllDebtKPIBtn = document.createElement("button");
-	exportAllDebtKPIBtn.textContent = "Export Debt KPI's Data CSV";
-	exportAllDebtKPIBtn.className = "export-btn";
-	exportAllDebtKPIBtn.onclick = () => exportKPIDataCSV(companyRunData, equityPerCompany, debtUsedByCompany, dscrByYear, numCompanies, NUM_RUNS);
-	chartsSection.appendChild(exportAllDebtKPIBtn);
-
-
-
-	// Valuation by Company (All Runs)
-	const companyValuations = {};
-
-	companyRunData.forEach(row => {
-		const companyId = `Company ${row.company}`;
-		const val = parseFloat(row.valuation);
-		if (!companyValuations[companyId]) companyValuations[companyId] = [];
-		companyValuations[companyId].push(val);
-	});
-
-	const valuationBoxPerCompany = Object.keys(companyValuations).map(companyId => ({
-		y: companyValuations[companyId],
-		type: 'box',
-		name: companyId,
-		boxpoints: false,
-		width: 0.5,
-		marker: {
-			color: 'rgba(0, 0, 0, 0.6)'
-		},
-		line: {
-			color: 'rgba(0, 0, 0, 1)'
-		}
-	}));
-
-	Plotly.newPlot("valuationByCompanyChart", valuationBoxPerCompany, {
-		title: "Valuation Distribution by Company",
-		yaxis: {
-			title: "Valuation ($)"
-		},
-		margin: {
-			t: 60
-		},
-		boxmode: "group"
-	});
-
-
-	// For boxplot per year
-	const equityBoxByYear = equityPerYear.map((vals, idx) => ({
-		y: vals,
-		type: 'box',
-		name: `${simulationStartYear + idx}`,
-		boxpoints: false,
-		width: 0.5
-	}));
-	Plotly.newPlot("equityByYearChart", equityBoxByYear, {
-		title: "Equity Injection Required by Year",
-		yaxis: {
-			title: "Equity ($)"
-		}
-	});
-
-	// For boxplot per company
-	const equityBoxByCompany = equityPerCompany.map((vals, idx) => ({
-		y: vals,
-		type: 'box',
-		name: `Company ${idx + 1}`,
-		boxpoints: false,
-		width: 0.5
-	}));
-	Plotly.newPlot("equityByCompanyChart", equityBoxByCompany, {
-		title: "Equity Required by Company",
-		yaxis: {
-			title: "Equity ($)"
-		}
-	});
-
-	// Debt Used – CDF
-	const totalDebtPerRun = debtUsedByYear[0].map((_, runIdx) =>
-		debtUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
-	);
-	const debtCDFSorted = [...totalDebtPerRun].sort((a, b) => a - b);
-	const debtCDF = debtCDFSorted.map((val, idx) => ({
-		x: val,
-		y: (idx + 1) / totalDebtPerRun.length
-	}));
-
-	Plotly.newPlot("debtCDFChart", [{
-		x: debtCDF.map(p => p.x),
-		y: debtCDF.map(p => p.y),
-		type: "scatter",
-		mode: "lines",
-		line: {
-			color: "rgba(54, 162, 235, 1)"
-		}
-	}], {
-		title: "Cumulative Distribution – Total Debt Used",
-		xaxis: {
-			title: "Total Debt ($)"
-		},
-		yaxis: {
-			title: "Probability",
-			range: [0, 1]
-		},
-		margin: {
-			t: 60
-		}
-	});
-
-    // === Chart 1: Equity Required Distribution (CDF or Histogram)
-    const equityCDFTrace = {
-        x: cashRequiredRuns.sort((a, b) => a - b),
-        type: 'histogram',
-        cumulative: { enabled: true },
-        name: "Equity Required (CDF)",
-        marker: { opacity: 0.75 }
-    };
-
-    Plotly.newPlot('equityCDFChart', [equityCDFTrace], {
-        title: "Equity Required (Cumulative Distribution)",
-        xaxis: { title: "Equity ($)" },
-        yaxis: { title: "Cumulative Count" }
+  
+  // Clear previous export buttons if they exist
+  const chartsSection = document.getElementById("chartsSection");
+  const prevButtons = chartsSection.querySelectorAll(".export-btn");
+  prevButtons.forEach((btn) => btn.remove());
+  
+  // Create Company CSV Export button
+  const exportAllBtn = document.createElement("button");
+  exportAllBtn.textContent = "Export Companies Data CSV";
+  exportAllBtn.className = "export-btn";
+  exportAllBtn.onclick = () => exportCompanyRunDataCSV(companyRunData);
+  chartsSection.appendChild(exportAllBtn);
+  
+  // Create Debt CSV Export button
+  const exportAllDebtBtn = document.createElement("button");
+  exportAllDebtBtn.textContent = "Export Debt Data CSV";
+  exportAllDebtBtn.className = "export-btn";
+  exportAllDebtBtn.onclick = () =>
+    exportDebtSchedulesCSV(
+      sellerDebtScheduleByCompany,
+      debtScheduleByCompany,
+      numCompanies,
+      years,
+      months,
+    );
+  chartsSection.appendChild(exportAllDebtBtn);
+  
+  // Create Debt CSV Export button
+  const exportAllDebtKPIBtn = document.createElement("button");
+  exportAllDebtKPIBtn.textContent = "Export Debt KPI's Data CSV";
+  exportAllDebtKPIBtn.className = "export-btn";
+  exportAllDebtKPIBtn.onclick = () =>
+    exportKPIDataCSV(
+      companyRunData,
+      equityPerCompany,
+      debtUsedByCompany,
+      dscrByYear,
+      numCompanies,
+      NUM_RUNS,
+    );
+  chartsSection.appendChild(exportAllDebtKPIBtn);
+  
+  // Valuation by Company (All Runs)
+  const companyValuations = {};
+  
+  companyRunData.forEach((row) => {
+    const companyId = `Company ${row.company}`;
+    const val = parseFloat(row.valuation);
+    if (!companyValuations[companyId]) companyValuations[companyId] = [];
+    companyValuations[companyId].push(val);
+  });
+  
+  const valuationBoxPerCompany = Object.keys(companyValuations).map(
+    (companyId) => ({
+      y: companyValuations[companyId],
+      type: "box",
+      name: companyId,
+      boxpoints: false,
+      width: 0.5,
+      marker: {
+        color: "rgba(0, 0, 0, 0.6)",
+      },
+      line: {
+        color: "rgba(0, 0, 0, 1)",
+      },
+    }),
+  );
+  
+  Plotly.newPlot("valuationByCompanyChart", valuationBoxPerCompany, {
+    title: "Valuation Distribution by Company",
+    yaxis: {
+      title: "Valuation ($)",
+    },
+    margin: {
+      t: 60,
+    },
+    boxmode: "group",
+  });
+  
+  // For boxplot per year
+  const equityBoxByYear = equityPerYear.map((vals, idx) => ({
+    y: vals,
+    type: "box",
+    name: `${simulationStartYear + idx}`,
+    boxpoints: false,
+    width: 0.5,
+  }));
+  Plotly.newPlot("equityByYearChart", equityBoxByYear, {
+    title: "Equity Injection Required by Year",
+    yaxis: {
+      title: "Equity ($)",
+    },
+  });
+  
+  // For boxplot per company
+  const equityBoxByCompany = equityPerCompany.map((vals, idx) => ({
+    y: vals,
+    type: "box",
+    name: `Company ${idx + 1}`,
+    boxpoints: false,
+    width: 0.5,
+  }));
+  Plotly.newPlot("equityByCompanyChart", equityBoxByCompany, {
+    title: "Equity Required by Company",
+    yaxis: {
+      title: "Equity ($)",
+    },
+  });
+  
+  // Debt Used – CDF
+  const totalDebtPerRun = debtUsedByYear[0].map((_, runIdx) =>
+    debtUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0),
+  );
+  const debtCDFSorted = [...totalDebtPerRun].sort((a, b) => a - b);
+  const debtCDF = debtCDFSorted.map((val, idx) => ({
+    x: val,
+    y: (idx + 1) / totalDebtPerRun.length,
+  }));
+  
+  Plotly.newPlot(
+    "debtCDFChart",
+    [
+      {
+        x: debtCDF.map((p) => p.x),
+        y: debtCDF.map((p) => p.y),
+        type: "scatter",
+        mode: "lines",
+        line: {
+          color: "rgba(54, 162, 235, 1)",
+        },
+      },
+    ],
+    {
+      title: "Cumulative Distribution – Total Debt Used",
+      xaxis: {
+        title: "Total Debt ($)",
+      },
+      yaxis: {
+        title: "Probability",
+        range: [0, 1],
+      },
+      margin: {
+        t: 60,
+      },
+    },
+  );
+  
+  // === Chart 1: Equity Required Distribution (CDF or Histogram)
+  const equityCDFTrace = {
+    x: cashRequiredRuns.sort((a, b) => a - b),
+    type: "histogram",
+    cumulative: { enabled: true },
+    name: "Equity Required (CDF)",
+    marker: { opacity: 0.75 },
+  };
+  
+  Plotly.newPlot("equityCDFChart", [equityCDFTrace], {
+    title: "Equity Required (Cumulative Distribution)",
+    xaxis: { title: "Equity ($)" },
+    yaxis: { title: "Cumulative Count" },
+  });
+  
+  // === Chart
+  const totalOpsCashPerRun = opsCashUsedByYear[0].map((_, runIdx) =>
+    opsCashUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0),
+  );
+  
+  const sortedOps = [...totalOpsCashPerRun].sort((a, b) => a - b);
+  const opsCDF = sortedOps.map((val, idx) => ({
+    x: val,
+    y: (idx + 1) / NUM_RUNS,
+  }));
+  
+  Plotly.newPlot(
+    "opsCashCDFChart",
+    [
+      {
+        x: opsCDF.map((p) => p.x),
+        y: opsCDF.map((p) => p.y),
+        type: "scatter",
+        mode: "lines",
+        line: {
+          color: "green",
+        },
+      },
+    ],
+    {
+      title: "CDF – Operations Cash Used",
+      xaxis: {
+        title: "Operating Cash ($)",
+      },
+      yaxis: {
+        title: "Probability",
+        range: [0, 1],
+      },
+    },
+  );
+  
+  // Export functions
+  function exportCompanyRunDataCSV(dataRows, filename = "company_run_data.csv") {
+    const headers = Object.keys(dataRows[0]);
+    const csvContent = [headers.join(",")]
+      .concat(dataRows.map((row) => headers.map((h) => row[h]).join(",")))
+      .join("\n");
+    const blob = new Blob([csvContent], {
+      type: "text/csv;charset=utf-8;",
     });
-
-    // === Chart
-	const totalOpsCashPerRun = opsCashUsedByYear[0].map((_, runIdx) =>
-		opsCashUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
-	);
-
-	const sortedOps = [...totalOpsCashPerRun].sort((a, b) => a - b);
-	const opsCDF = sortedOps.map((val, idx) => ({
-		x: val,
-		y: (idx + 1) / NUM_RUNS
-	}));
-
-	Plotly.newPlot("opsCashCDFChart", [{
-		x: opsCDF.map(p => p.x),
-		y: opsCDF.map(p => p.y),
-		type: "scatter",
-		mode: "lines",
-		line: {
-			color: "green"
-		}
-	}], {
-		title: "CDF – Operations Cash Used",
-		xaxis: {
-			title: "Operating Cash ($)"
-		},
-		yaxis: {
-			title: "Probability",
-			range: [0, 1]
-		}
-	});
-
-
-
-
-    // Export functions
-    function exportCompanyRunDataCSV(dataRows, filename = "company_run_data.csv") {
-        const headers = Object.keys(dataRows[0]);
-        const csvContent = [headers.join(",")].concat(dataRows.map(row => headers.map(h => row[h]).join(","))).join("\n");
-        const blob = new Blob([csvContent], {
-            type: 'text/csv;charset=utf-8;'
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+  
+  function exportKPIDataCSV(
+    companyRunData,
+    equityPerCompany,
+    debtUsedByCompany,
+    dscrByYear,
+    numCompanies,
+    NUM_RUNS,
+  ) {
+    const rows = [];
+  
+    for (let run = 0; run < NUM_RUNS; run++) {
+      for (let i = 0; i < numCompanies; i++) {
+        const data = companyRunData.find(
+          (d) => d.run === run + 1 && d.company === i + 1,
+        );
+        if (!data) continue;
+  
+        const equity = equityPerCompany[i][run] || 0;
+        const debt = debtUsedByCompany[i][run] || 0;
+        const ebitda = parseFloat(data.base_ebitda) || 0;
+        const valuation = parseFloat(data.valuation) || 0;
+        const revenue = parseFloat(data.revenue) || 0;
+  
+        const dscr = (() => {
+          const yearIndex = data.acquisition_year - 2025;
+          return dscrByYear?.[yearIndex]?.[run] ?? null;
+        })();
+  
+        const evToRevenue = revenue > 0 ? valuation / revenue : null;
+        const ebitdaMargin = revenue > 0 ? ebitda / revenue : null;
+        const debtToEbitda = ebitda > 0 ? debt / ebitda : null;
+        const equityPctOfEV = valuation > 0 ? equity / valuation : null;
+        const netCashOutlay = equity + (parseFloat(data.cash_needed) - equity);
+  
+        rows.push({
+          run: run + 1,
+          company: i + 1,
+          year: data.acquisition_year,
+          revenue,
+          base_ebitda: ebitda,
+          valuation,
+          multiple: data.multiple,
+          ev_to_revenue: evToRevenue,
+          ebitda_margin: ebitdaMargin,
+          debt_used: debt,
+          debt_pct: data.debt_pct,
+          debt_to_ebitda: debtToEbitda,
+          equity_injected: equity,
+          equity_pct_of_ev: equityPctOfEV,
+          ops_cash_used: parseFloat(data.cash_needed) - equity,
+          net_cash_outlay: netCashOutlay,
+          rollover_pct: data.rollover,
+          earnout_pct: data.earnout,
+          seller_pct: data.seller,
+          fee_amount: data.fee_amount,
+          extra_exp: data.extra_exp,
+          dscr,
         });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", filename);
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      }
     }
-
-
-    function exportKPIDataCSV(companyRunData, equityPerCompany, debtUsedByCompany, dscrByYear, numCompanies, NUM_RUNS) {
-        const rows = [];
-
-        for (let run = 0; run < NUM_RUNS; run++) {
-            for (let i = 0; i < numCompanies; i++) {
-                const data = companyRunData.find(d => d.run === run + 1 && d.company === i + 1);
-                if (!data) continue;
-
-                const equity = equityPerCompany[i][run] || 0;
-                const debt = debtUsedByCompany[i][run] || 0;
-                const ebitda = parseFloat(data.base_ebitda) || 0;
-                const valuation = parseFloat(data.valuation) || 0;
-                const revenue = parseFloat(data.revenue) || 0;
-
-                const dscr = (() => {
-                    const yearIndex = data.acquisition_year - 2025;
-                    return dscrByYear?.[yearIndex]?.[run] ?? null;
-                })();
-
-                const evToRevenue = revenue > 0 ? valuation / revenue : null;
-                const ebitdaMargin = revenue > 0 ? ebitda / revenue : null;
-                const debtToEbitda = ebitda > 0 ? debt / ebitda : null;
-                const equityPctOfEV = valuation > 0 ? equity / valuation : null;
-                const netCashOutlay = equity + (parseFloat(data.cash_needed) - equity);
-
-                rows.push({
-                    run: run + 1,
-                    company: i + 1,
-                    year: data.acquisition_year,
-                    revenue,
-                    base_ebitda: ebitda,
-                    valuation,
-                    multiple: data.multiple,
-                    ev_to_revenue: evToRevenue,
-                    ebitda_margin: ebitdaMargin,
-                    debt_used: debt,
-                    debt_pct: data.debt_pct,
-                    debt_to_ebitda: debtToEbitda,
-                    equity_injected: equity,
-                    equity_pct_of_ev: equityPctOfEV,
-                    ops_cash_used: parseFloat(data.cash_needed) - equity,
-                    net_cash_outlay: netCashOutlay,
-                    rollover_pct: data.rollover,
-                    earnout_pct: data.earnout,
-                    seller_pct: data.seller,
-                    fee_amount: data.fee_amount,
-                    extra_exp: data.extra_exp,
-                    dscr
-                });
-            }
-        }
-        
+  
     const csvContent = [
-        Object.keys(rows[0]).join(","),
-        ...rows.map(row => Object.values(row).join(","))
+      Object.keys(rows[0]).join(","),
+      ...rows.map((row) => Object.values(row).join(",")),
     ].join("\n");
-
+  
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -944,6 +997,7 @@ function renderCharts(
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  }
 }
 ///////
 
