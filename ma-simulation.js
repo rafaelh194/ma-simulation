@@ -426,27 +426,27 @@ function sampleNormal(mean, std) {
 ///// CHARTS
 
 function renderCharts(
-	summary,
-	revenueTotals,
-	costTotals,
-	ebitdaTotals,
-	ebitdaAnnualRuns,
-	valuationRunsByYear,
-	cashByYear,
-	companyRunData,
-	sellerDebtScheduleByCompany,
-	debtScheduleByCompany,
-	equityPerYear,
-	equityPerCompany,
-	debtUsedByYear,
-	opsCashUsedByYear,
-	cashRequiredRuns,
-	numCompanies,
+    summary,
+    revenueTotals,
+    costTotals,
+    ebitdaTotals,
+    ebitdaAnnualRuns,
+    valuationRunsByYear,
+    cashByYear,
+    companyRunData,
+    sellerDebtScheduleByCompany,
+    debtScheduleByCompany,
+    equityPerYear,
+    equityPerCompany,
+    debtUsedByYear,
+    opsCashUsedByYear,
+    cashRequiredRuns,
+    numCompanies,
     debtUsedByCompany,
     dscrByYear,
-	years,
-	months,
-    NUM_RUNS 
+    years,
+    months,
+    NUM_RUNS
 ) {
 	const simulationStartYear = 2025;
 	const yearLabels = summary.map((_, i) => (simulationStartYear + i).toString());
@@ -1002,7 +1002,6 @@ function runSimulation() {
 
 
 	const cashByYear = Array(years).fill(0);
-	const companyRunData = [];
 	const minOpCash = 0;
 
 	const sellerDebtScheduleMonthly = Array.from({
@@ -1043,6 +1042,8 @@ function runSimulation() {
 			length: years
 		}, () => Array(months).fill(0))
 	);
+
+    const companyRunData = [];
 
 	for (let run = 0; run < NUM_RUNS; run++) {
 		const revenue = Array.from({
