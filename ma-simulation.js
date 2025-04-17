@@ -1727,4 +1727,13 @@ document.addEventListener('DOMContentLoaded', () => {
 	window.toggleAllCompanies = toggleAllCompanies;
 	window.toggleCollapsedBlock = toggleCollapsedBlock;
 	window.toggleTable = toggleTable;
+    window.valuationRunsByYear = valuationRunsByYear;
+    window.companyRunData = companyRunData;
+    window.equityPerYear = equityPerYear;
+    window.dscrByYear = dscrByYear;
+    window.debtUsedByYear = debtUsedByYear;
+    window.debtUsedByCompany = debtUsedByCompany;
+    window.equityPerCompany = equityPerCompany;
+    window.opsCashUsedByYear = opsCashUsedByYear;
+    window.cashRequiredRuns = cashRequiredRuns;
 });
