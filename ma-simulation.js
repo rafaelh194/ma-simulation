@@ -609,7 +609,7 @@ function renderCharts(
 		boxmode: "group"
 	});
 
-
+    //-- Debt by Year
 	const debtBoxByYear = debtUsedByYear.map((vals, idx) => ({
 		y: vals,
 		type: 'box',
@@ -625,55 +625,65 @@ function renderCharts(
 		}
 	});
 
-    const dscrBoxByYear = dscrByYear.map((vals, idx) => ({
-        y: vals,
-        type: 'box',
-        name: `${simulationStartYear + idx}`,
-        boxpoints: false,
-        width: 0.5,
-        marker: {
-            color: 'rgba(255, 206, 86, 0.6)'
-        },
-        line: {
-            color: 'rgba(255, 206, 86, 1)'
-        }
-    }));
-    
-    Plotly.newPlot("dscrByYearChart", dscrBoxByYear, {
-        title: "DSCR by Year",
-        yaxis: {
-            title: "DSCR"
-        },
-        margin: {
-            t: 60
-        }
-    });
-
-
+    //-- Debt by Company
     const debtBoxByCompany = debtUsedByCompany.map((vals, idx) => ({
         y: vals,
         type: 'box',
         name: `Company ${idx + 1}`,
         boxpoints: false,
-        width: 0.5,
-        marker: {
-            color: 'rgba(54, 162, 235, 0.6)'
-        },
-        line: {
-            color: 'rgba(54, 162, 235, 1)'
-        }
+        width: 0.5
     }));
     
     Plotly.newPlot("debtByCompanyChart", debtBoxByCompany, {
         title: "Debt Used by Company",
-        yaxis: {
-            title: "Debt Used ($)"
-        },
-        margin: {
-            t: 60
-        },
-        boxmode: "group"
+        yaxis: { title: "Debt ($)" }
     });
+
+    // === DSCR Over Time (Average per year)
+    const avgDSCRByYear = dscrByYear.map(yearArr => {
+        const valid = yearArr.filter(val => isFinite(val));
+        const sum = valid.reduce((a, b) => a + b, 0);
+        return valid.length > 0 ? sum / valid.length : 99;
+    });
+
+    const dscrTrace = {
+        x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
+        y: avgDSCRByYear,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'DSCR'
+    };
+
+    Plotly.newPlot('dscrChart', [dscrTrace], {
+        title: "Average DSCR Over Time",
+        yaxis: { title: "DSCR", range: [0, Math.max(...avgDSCRByYear, 2) + 0.5] },
+        xaxis: { title: "Year" }
+    });
+
+    // === Chart 3: Equity vs Ops Cash per Year (Bar)
+    const equityPerYearAvg = equityPerYear.map(arr => arr.reduce((a, b) => a + b, 0) / NUM_RUNS);
+    const opsCashPerYearAvg = opsCashUsedByYear.map(arr => arr.reduce((a, b) => a + b, 0) / NUM_RUNS);
+
+    const equityBar = {
+        x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
+        y: equityPerYearAvg,
+        name: 'Equity',
+        type: 'bar'
+    };
+
+    const opsBar = {
+        x: Array.from({ length: years }, (_, i) => `Year ${i + 1}`),
+        y: opsCashPerYearAvg,
+        name: 'Ops Cash',
+        type: 'bar'
+    };
+
+    Plotly.newPlot('fundingStackChart', [equityBar, opsBar], {
+        barmode: 'stack',
+        title: 'Funding Source per Year',
+        yaxis: { title: "Amount ($)" }
+    });
+    }
 
 
 
@@ -696,7 +706,7 @@ function renderCharts(
 	exportAllDebtBtn.onclick = () => exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompany, numCompanies, years, months);
 	chartsSection.appendChild(exportAllDebtBtn);
 
-    	// Create Debt CSV Export button
+    // Create Debt CSV Export button
 	const exportAllDebtKPIBtn = document.createElement("button");
 	exportAllDebtKPIBtn.textContent = "Export Debt KPI's Data CSV";
 	exportAllDebtKPIBtn.className = "export-btn";
@@ -803,38 +813,22 @@ function renderCharts(
 		}
 	});
 
-	// Equity Required – CDF
-	const totalEquityPerRun = equityPerYear[0].map((_, runIdx) =>
-		equityPerYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
-	);
-	const equityCDFSorted = [...totalEquityPerRun].sort((a, b) => a - b);
-	const equityCDF = equityCDFSorted.map((val, idx) => ({
-		x: val,
-		y: (idx + 1) / totalEquityPerRun.length
-	}));
+    // === Chart 1: Equity Required Distribution (CDF or Histogram)
+    const equityCDFTrace = {
+        x: cashRequiredRuns.sort((a, b) => a - b),
+        type: 'histogram',
+        cumulative: { enabled: true },
+        name: "Equity Required (CDF)",
+        marker: { opacity: 0.75 }
+    };
 
-	Plotly.newPlot("equityCDFChart", [{
-		x: equityCDF.map(p => p.x),
-		y: equityCDF.map(p => p.y),
-		type: "scatter",
-		mode: "lines",
-		line: {
-			color: "rgba(255, 99, 132, 1)"
-		}
-	}], {
-		title: "Cumulative Distribution – Total Equity Required",
-		xaxis: {
-			title: "Total Equity ($)"
-		},
-		yaxis: {
-			title: "Probability",
-			range: [0, 1]
-		},
-		margin: {
-			t: 60
-		}
-	});
+    Plotly.newPlot('equityCDFChart', [equityCDFTrace], {
+        title: "Equity Required (Cumulative Distribution)",
+        xaxis: { title: "Equity ($)" },
+        yaxis: { title: "Cumulative Count" }
+    });
 
+    // === Chart
 	const totalOpsCashPerRun = opsCashUsedByYear[0].map((_, runIdx) =>
 		opsCashUsedByYear.reduce((sum, yearArray) => sum + yearArray[runIdx], 0)
 	);
@@ -867,169 +861,90 @@ function renderCharts(
 
 
 
-}
-// Export function
-function exportCompanyRunDataCSV(dataRows, filename = "company_run_data.csv") {
-	const headers = Object.keys(dataRows[0]);
-	const csvContent = [headers.join(",")].concat(dataRows.map(row => headers.map(h => row[h]).join(","))).join("\n");
-	const blob = new Blob([csvContent], {
-		type: 'text/csv;charset=utf-8;'
-	});
-	const link = document.createElement("a");
-	const url = URL.createObjectURL(blob);
-	link.setAttribute("href", url);
-	link.setAttribute("download", filename);
-	link.style.visibility = "hidden";
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
-}
-
-// Export function Debt
-function exportDebtSchedulesCSV(sellerDebtScheduleByCompany, debtScheduleByCompany, numCompanies, years, months) {
-	const rows = [];
-
-	for (let i = 0; i < numCompanies; i++) {
-		for (let y = 0; y < years; y++) {
-			const year = 2025 + y;
-			// SELLER FINANCING
-			let sellerRow = [`Company ${i + 1}`, "SellerFin", year];
-			let sellerPrincipal = 0;
-			let sellerInterest = 0;
-
-			for (let m = 0; m < months; m++) {
-				const payment = sellerDebtScheduleByCompany[i][y][m] || 0;
-				const principal = (sellerDebtScheduleByCompany[i].principal?.[y]?.[m]) || 0;
-				const interest = (sellerDebtScheduleByCompany[i].interest?.[y]?.[m]) || 0;
-
-				sellerRow.push(payment.toFixed(2));
-				sellerPrincipal += principal;
-				sellerInterest += interest;
-			}
-
-			sellerRow.push(sellerPrincipal.toFixed(2));
-			sellerRow.push(sellerInterest.toFixed(2));
-			rows.push(sellerRow);
-
-			// SENIOR DEBT
-			let debtRow = [`Company ${i + 1}`, "SeniorDebt", year];
-			let debtPrincipal = 0;
-			let debtInterest = 0;
-
-			for (let m = 0; m < months; m++) {
-				const payment = debtScheduleByCompany[i][y][m] || 0;
-				const principal = (debtScheduleByCompany[i].principal?.[y]?.[m]) || 0;
-				const interest = (debtScheduleByCompany[i].interest?.[y]?.[m]) || 0;
-
-				debtRow.push(payment.toFixed(2));
-				debtPrincipal += principal;
-				debtInterest += interest;
-			}
-
-			debtRow.push(debtPrincipal.toFixed(2));
-			debtRow.push(debtInterest.toFixed(2));
-			rows.push(debtRow);
-
-			// TOTAL
-			let totalRow = [`Company ${i + 1}`, "Total", year];
-			for (let m = 0; m < months; m++) {
-				const sf = sellerDebtScheduleByCompany[i][y][m] || 0;
-				const sd = debtScheduleByCompany[i][y][m] || 0;
-				totalRow.push((sf + sd).toFixed(2));
-			}
-			totalRow.push((sellerPrincipal + debtPrincipal).toFixed(2));
-			totalRow.push((sellerInterest + debtInterest).toFixed(2));
-			rows.push(totalRow);
-		}
-	}
-
-	const headers = ["Company", "Type", "Year", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Principal", "Interest"
-	];
-
-	const csvContent = [headers.join(",")]
-		.concat(rows.map(r => r.join(",")))
-		.join("\n");
-
-	const blob = new Blob([csvContent], {
-		type: 'text/csv;charset=utf-8;'
-	});
-	const link = document.createElement("a");
-	link.setAttribute("href", URL.createObjectURL(blob));
-	link.setAttribute("download", "debt_schedule.csv");
-	link.style.visibility = "hidden";
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
-}
-
-
-function exportKPIDataCSV(companyRunData, equityPerCompany, debtUsedByCompany, dscrByYear, numCompanies, NUM_RUNS) {
-    const rows = [];
-
-    for (let run = 0; run < NUM_RUNS; run++) {
-        for (let i = 0; i < numCompanies; i++) {
-            const data = companyRunData.find(d => d.run === run + 1 && d.company === i + 1);
-            if (!data) continue;
-
-            const equity = equityPerCompany[i][run] || 0;
-            const debt = debtUsedByCompany[i][run] || 0;
-            const ebitda = parseFloat(data.base_ebitda) || 0;
-            const valuation = parseFloat(data.valuation) || 0;
-            const revenue = parseFloat(data.revenue) || 0;
-
-            const dscr = (() => {
-                const yearIndex = data.acquisition_year - 2025;
-                return dscrByYear?.[yearIndex]?.[run] ?? null;
-            })();
-
-            const evToRevenue = revenue > 0 ? valuation / revenue : null;
-            const ebitdaMargin = revenue > 0 ? ebitda / revenue : null;
-            const debtToEbitda = ebitda > 0 ? debt / ebitda : null;
-            const equityPctOfEV = valuation > 0 ? equity / valuation : null;
-            const netCashOutlay = equity + (parseFloat(data.cash_needed) - equity);
-
-            rows.push({
-                run: run + 1,
-                company: i + 1,
-                year: data.acquisition_year,
-                revenue,
-                base_ebitda: ebitda,
-                valuation,
-                multiple: data.multiple,
-                ev_to_revenue: evToRevenue,
-                ebitda_margin: ebitdaMargin,
-                debt_used: debt,
-                debt_pct: data.debt_pct,
-                debt_to_ebitda: debtToEbitda,
-                equity_injected: equity,
-                equity_pct_of_ev: equityPctOfEV,
-                ops_cash_used: parseFloat(data.cash_needed) - equity,
-                net_cash_outlay: netCashOutlay,
-                rollover_pct: data.rollover,
-                earnout_pct: data.earnout,
-                seller_pct: data.seller,
-                fee_amount: data.fee_amount,
-                extra_exp: data.extra_exp,
-                dscr
-            });
-        }
-    }
-    
-        const csvContent = [
-            Object.keys(rows[0]).join(","),
-            ...rows.map(row => Object.values(row).join(","))
-        ].join("\n");
-    
-        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
+    // Export functions
+    function exportCompanyRunDataCSV(dataRows, filename = "company_run_data.csv") {
+        const headers = Object.keys(dataRows[0]);
+        const csvContent = [headers.join(",")].concat(dataRows.map(row => headers.map(h => row[h]).join(","))).join("\n");
+        const blob = new Blob([csvContent], {
+            type: 'text/csv;charset=utf-8;'
+        });
         const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", "Company_KPI_Data.csv");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = "hidden";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     }
+
+
+    function exportKPIDataCSV(companyRunData, equityPerCompany, debtUsedByCompany, dscrByYear, numCompanies, NUM_RUNS) {
+        const rows = [];
+
+        for (let run = 0; run < NUM_RUNS; run++) {
+            for (let i = 0; i < numCompanies; i++) {
+                const data = companyRunData.find(d => d.run === run + 1 && d.company === i + 1);
+                if (!data) continue;
+
+                const equity = equityPerCompany[i][run] || 0;
+                const debt = debtUsedByCompany[i][run] || 0;
+                const ebitda = parseFloat(data.base_ebitda) || 0;
+                const valuation = parseFloat(data.valuation) || 0;
+                const revenue = parseFloat(data.revenue) || 0;
+
+                const dscr = (() => {
+                    const yearIndex = data.acquisition_year - 2025;
+                    return dscrByYear?.[yearIndex]?.[run] ?? null;
+                })();
+
+                const evToRevenue = revenue > 0 ? valuation / revenue : null;
+                const ebitdaMargin = revenue > 0 ? ebitda / revenue : null;
+                const debtToEbitda = ebitda > 0 ? debt / ebitda : null;
+                const equityPctOfEV = valuation > 0 ? equity / valuation : null;
+                const netCashOutlay = equity + (parseFloat(data.cash_needed) - equity);
+
+                rows.push({
+                    run: run + 1,
+                    company: i + 1,
+                    year: data.acquisition_year,
+                    revenue,
+                    base_ebitda: ebitda,
+                    valuation,
+                    multiple: data.multiple,
+                    ev_to_revenue: evToRevenue,
+                    ebitda_margin: ebitdaMargin,
+                    debt_used: debt,
+                    debt_pct: data.debt_pct,
+                    debt_to_ebitda: debtToEbitda,
+                    equity_injected: equity,
+                    equity_pct_of_ev: equityPctOfEV,
+                    ops_cash_used: parseFloat(data.cash_needed) - equity,
+                    net_cash_outlay: netCashOutlay,
+                    rollover_pct: data.rollover,
+                    earnout_pct: data.earnout,
+                    seller_pct: data.seller,
+                    fee_amount: data.fee_amount,
+                    extra_exp: data.extra_exp,
+                    dscr
+                });
+            }
+        }
+        
+    const csvContent = [
+        Object.keys(rows[0]).join(","),
+        ...rows.map(row => Object.values(row).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "Company_KPI_Data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 ///////
 
 
@@ -1143,15 +1058,17 @@ function runSimulation() {
 		let netCashFlow = Array.from({
 			length: years
 		}, () => Array(months).fill(0));
-		let usedInitialCashBS = false;
+
+        let netCashFlowByCompany = Array.from({ length: numCompanies }, () =>
+            Array.from({ length: years }, () => Array(months).fill(0))
+        );
+
         const initialCashBS = +document.getElementById('initial_cash').value || 0;
         let sfCapitalRemaining = +document.getElementById('sf_capital_left').value || 0;
-        let rollupCashBalance = initialCashBS + sfCapitalRemaining;
 
 
         let baseEBITDAByCompany = Array(numCompanies).fill(0);
         let adjustedEBITDAByCompanyYear = Array.from({ length: numCompanies }, () => Array(years).fill(0));        
-        let annualDebtServiceSoFar = 0;
 
 		for (let i = 0; i < numCompanies; i++) {
 			const rev = sampleTriangular(+document.getElementById(`c${i}_rev_min`).value, +document.getElementById(`c${i}_rev_ml`).value, +document.getElementById(`c${i}_rev_max`).value);
@@ -1164,7 +1081,7 @@ function runSimulation() {
 			const acqYear = +document.getElementById(`c${i}_year`).value;
 			const acqMonth = +document.getElementById(`c${i}_month`).value;
 			const extraExp = +document.getElementById(`c${i}_extra_exp`).value || 0;
-			const acqOffset = acqYear - simulationStartYear;
+			const acqOffset = acqYear - simulationStartYear;            
             
 			if (acqOffset >= years || acqOffset < 0) continue;
 
@@ -1213,372 +1130,335 @@ function runSimulation() {
 				facility: synergyPct("facility")
 			};
 
-			for (let y = acqOffset; y < years; y++) {
-				const yearOffset = y - acqOffset;
-				const revGrowthFactor = Math.pow(1 + growth + priceInflation, yearOffset);
-				const costGrowthFactor = Math.pow(1 + costInflation, yearOffset);
 
-				for (let m = 0; m < months; m++) {
-					if (y === acqOffset && m < acqMonth - 1) continue;
+            // === Acquisition Input Setup ===
+            const acqMonthIndex = (acqYear - simulationStartYear) * 12 + (acqMonth - 1);
 
-					const baseRev = revMonthly[m] * revGrowthFactor;
-					const baseCst = monthlyBaseCost * costGrowthFactor;
+            // Entry valuation
+            const avgMult = +document.getElementById(`c${i}_entry_avg`).value || 0;
+            const stdMult = +document.getElementById(`c${i}_entry_std`).value || 0;
+            const multiple = sampleNormal(avgMult, stdMult);
+            const valuation = baseAnnualEBITDA * multiple;
 
-					const adjustedRevenue = baseRev * (1 + synergies.cross + synergies.price - synergies.churn);
-					const adjustedCost = baseCst * (1 - synergies.tech - synergies.shared - synergies.facility);
-					const adjustedEBITDA = adjustedRevenue - adjustedCost - extraExp;
-                    adjustedEBITDAByCompanyYear[i][y] += adjustedEBITDA;
-
-					revenue[y][m] += adjustedRevenue;
-					cost[y][m] += adjustedCost;
-					ebitda[y][m] += adjustedEBITDA;
-					netCashFlow[y][m] += adjustedEBITDA;
-
-					revenueTotals[y][m] += adjustedRevenue;
-					costTotals[y][m] += adjustedCost;
-					ebitdaTotals[y][m] += adjustedEBITDA;
-
-					revenueCount[y][m]++;
-					costCount[y][m]++;
-					ebitdaCount[y][m]++;
-				}
-			}
-
-			const avgMult = +document.getElementById(`c${i}_entry_avg`).value || 0;
-			const stdMult = +document.getElementById(`c${i}_entry_std`).value || 0;
-			const multiple = sampleNormal(avgMult, stdMult);
-			const valuation = baseAnnualEBITDA * multiple;
-
-			// Rollover
-			const rolloverMin = +document.getElementById(`c${i}_rollover_min`).value || 0;
-			const rolloverML = +document.getElementById(`c${i}_rollover_ml`).value || 0;
-			const rolloverMax = +document.getElementById(`c${i}_rollover_max`).value || 0;
-			const rolloverPct = sampleTriangular(rolloverMin, rolloverML, rolloverMax);
+            // Rollover
+            const rolloverMin = +document.getElementById(`c${i}_rollover_min`).value || 0;
+            const rolloverML  = +document.getElementById(`c${i}_rollover_ml`).value || 0;
+            const rolloverMax = +document.getElementById(`c${i}_rollover_max`).value || 0;
+            const rolloverPct = sampleTriangular(rolloverMin, rolloverML, rolloverMax);
             const rolloverAmount = valuation * (rolloverPct / 100);
 
-			// Earnout
-			const earnoutMin = +document.getElementById(`c${i}_earnout_min`).value || 0;
-			const earnoutML = +document.getElementById(`c${i}_earnout_ml`).value || 0;
-			const earnoutMax = +document.getElementById(`c${i}_earnout_max`).value || 0;
-			const earnoutPct = sampleTriangular(earnoutMin, earnoutML, earnoutMax);
-			const earnoutYears = +document.getElementById(`c${i}_earnout_years`).value || 1;
-			const earnoutAmount = valuation * (earnoutPct / 100);
-			const annualEarnout = earnoutAmount / earnoutYears;
-			const startMonthIndex = (acqYear - simulationStartYear) * 12 + (acqMonth - 1);
+            // Seller Financing
+            const sellerMin = +document.getElementById(`c${i}_seller_min`).value || 0;
+            const sellerML  = +document.getElementById(`c${i}_seller_ml`).value || 0;
+            const sellerMax = +document.getElementById(`c${i}_seller_max`).value || 0;
+            const sellerPct = sampleTriangular(sellerMin, sellerML, sellerMax);
+            const sellerRate = +document.getElementById(`c${i}_seller_rate`).value || 0;
+            const sellerTerm = +document.getElementById(`c${i}_seller_term`).value || 60;
+            const sellerAmount = valuation * (sellerPct / 100);
 
-			for (let y = 0; y < earnoutYears; y++) {
-				const payoutMonthIndex = startMonthIndex + (y + 1) * 12; // full year after
-				const payoutYear = Math.floor(payoutMonthIndex / 12);
-				const payoutMonth = payoutMonthIndex % 12;
+            // Earnout
+            const earnoutMin = +document.getElementById(`c${i}_earnout_min`).value || 0;
+            const earnoutML  = +document.getElementById(`c${i}_earnout_ml`).value || 0;
+            const earnoutMax = +document.getElementById(`c${i}_earnout_max`).value || 0;
+            const earnoutPct = sampleTriangular(earnoutMin, earnoutML, earnoutMax);
+            const earnoutYears = +document.getElementById(`c${i}_earnout_years`).value || 1;
+            const earnoutAmount = valuation * (earnoutPct / 100);
+            const annualEarnout = earnoutAmount / earnoutYears;
 
-				if (payoutYear < years) {
-					netCashFlow[payoutYear][payoutMonth] -= annualEarnout;
-				}
-			}
+            // === 1. Earnout Schedule (starts 1 year after acquisition month) ===
+            const earnoutSchedule = Array.from({ length: years }, () => Array(months).fill(0));
+            const earnoutStartMonthIndex = acqMonthIndex + 12; // starts 12 months after acquisition
 
-			// Seller Financing
-			const sellerMin = +document.getElementById(`c${i}_seller_min`).value || 0;
-			const sellerML = +document.getElementById(`c${i}_seller_ml`).value || 0;
-			const sellerMax = +document.getElementById(`c${i}_seller_max`).value || 0;
-			const sellerPct = sampleTriangular(sellerMin, sellerML, sellerMax);
-			const sellerRate = +document.getElementById(`c${i}_seller_rate`).value || 0;
-			const sellerAmount = valuation * (sellerPct / 100);
+            for (let y = 0; y < earnoutYears; y++) {
+                const payoutMonthIndex = earnoutStartMonthIndex + y * 12;
+                const payoutYear = Math.floor(payoutMonthIndex / 12);
+                const payoutMonth = payoutMonthIndex % 12;
 
-			// Seller Financing schedule
-			const acqMonthIndex = (acqYear - simulationStartYear) * 12 + (acqMonth - 1);
-			const sellerTerm = +document.getElementById(`c${i}_seller_term`).value || 60;
+                if (payoutYear < years) {
+                    earnoutSchedule[payoutYear][payoutMonth] = annualEarnout;
+                }
+            }
+            earnoutScheduleByCompany[i] = earnoutSchedule;
 
-			// Simulate Debt %
-            const dscrMin = +document.getElementById(`fund_dscr_min_${i}`).value || 0;
+            // === 2. Seller Financing Schedule ===
+            const sellerSchedule = Array.from({ length: years }, () => Array(months).fill(0));
+            const monthlySellerRate = sellerRate / 100 / 12;
+
+            const sellerMonthlyPayment = (monthlySellerRate === 0)
+                ? sellerAmount / sellerTerm
+                : sellerAmount * (monthlySellerRate / (1 - Math.pow(1 + monthlySellerRate, -sellerTerm)));
+
+            let sellerBalance = sellerAmount;
+
+            for (let m = 0; m < sellerTerm; m++) {
+                const globalMonth = acqMonthIndex + m;
+                if (globalMonth >= years * 12) break;
+
+                const y = Math.floor(globalMonth / 12);
+                const mo = globalMonth % 12;
+
+                const interest = sellerBalance * monthlySellerRate;
+                const principal = sellerMonthlyPayment - interest;
+                sellerBalance -= principal;
+
+                sellerSchedule[y][mo] = sellerMonthlyPayment;
+            }
+            sellerDebtScheduleByCompany[i] = sellerSchedule;
+
+            // === 3.1 Input parameters for DSCR & Debt ===
             const debtMin = +document.getElementById(`fund_debt_min_${i}`).value || 0;
             const debtML  = +document.getElementById(`fund_debt_ml_${i}`).value || 0;
             const debtMax = +document.getElementById(`fund_debt_max_${i}`).value || 0;
             const debtRateAnnual = (+document.getElementById(`fund_rate_${i}`).value || 0) / 100;
             const debtTermMonths = +document.getElementById(`fund_term_${i}`).value || 60;
-            
+            const dscrMin = +document.getElementById(`fund_dscr_min_${i}`).value || 0;
+
             const monthlyRateDebt = debtRateAnnual / 12;
 
-            const debtPctSim = Math.min(100, sampleTriangular(debtMin, debtML, debtMax));
+            // === 3.2 Simulate debt amount ===
+            const simulatedDebtPct = sampleTriangular(debtMin, debtML, debtMax); // %
+            const proposedDebtAmount = (simulatedDebtPct / 100) * valuation;
 
-            let proposedDebtAmount = (debtPctSim / 100) * valuation;
-            proposedDebtAmount = Math.min(proposedDebtAmount, valuation);
-
-            let ebitdaAnnual = baseEBITDAByCompany[i]; // current company (unadjusted)
+            // === 3.3 Sum EBITDA for DSCR (current + prior companies) ===
+            let ebitdaAnnual = baseAnnualEBITDA;
 
             for (let j = 0; j < i; j++) {
-                const prevAcqYear = +document.getElementById(`c${j}_year`).value;
-                const prevAcqMonth = +document.getElementById(`c${j}_month`).value;
-                
-                // Include company if acquired before current one, even in same year
-                if (
-                    prevAcqYear < acqYear || 
-                    (prevAcqYear === acqYear && prevAcqMonth < acqMonth)
-                ) {
-                    const prevAcqOffset = prevAcqYear - simulationStartYear;
-                    ebitdaAnnual += adjustedEBITDAByCompanyYear[j][prevAcqOffset];
+                const prevYear = +document.getElementById(`c${j}_year`).value;
+                const prevMonth = +document.getElementById(`c${j}_month`).value;
+                const prevAcqMonth = (prevYear - simulationStartYear) * 12 + (prevMonth - 1);
+
+                if (prevAcqMonth < acqMonthIndex) {
+                    const prevOffset = prevYear - simulationStartYear;
+                    ebitdaAnnual += adjustedEBITDAByCompanyYear[j]?.[prevOffset] || 0;
                 }
             }
-            
-            const monthlyPmt = (monthlyRateDebt === 0)
+
+
+            // === 3.4 Initial debt service estimate
+            let monthlyDebtPmt = (monthlyRateDebt === 0)
                 ? proposedDebtAmount / debtTermMonths
                 : proposedDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
-  
-            const proposedAnnualDebtService = monthlyPmt * 12;
-            const totalDebtService = proposedAnnualDebtService + annualDebtServiceSoFar;
-            const preAdjustDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 0;
 
-            if ((preAdjustDSCR < 0 || isNaN(preAdjustDSCR) || !isFinite(preAdjustDSCR))) {
-                console.warn(`⚠️ DSCR issue in run ${run + 1}, company ${i + 1}`, {
-                    rev,
-                    ebitdaPct,
-                    baseAnnualEBITDA,
-                    proposedDebtAmount,
-                    proposedAnnualDebtService,
-                    preAdjustDSCR,
-                    ebitdaAnnual,
-                    totalDebtService
-                });
+            let annualDebtService = monthlyDebtPmt * 12;
+
+            // === 3.5 Adjust for DSCR constraint if needed
+            let finalDebtAmount = proposedDebtAmount;
+
+            if (dscrMin > 0) {
+                const currentDSCR = annualDebtService > 0 ? ebitdaAnnual / annualDebtService : 99;
+
+                if (currentDSCR < dscrMin) {
+                    const maxAllowedService = ebitdaAnnual / dscrMin;
+
+                    finalDebtAmount = (monthlyRateDebt === 0)
+                        ? maxAllowedService * (debtTermMonths / 12)
+                        : maxAllowedService / (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+
+                    // Recalculate payment for capped debt
+                    monthlyDebtPmt = (monthlyRateDebt === 0)
+                        ? finalDebtAmount / debtTermMonths
+                        : finalDebtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+
+                    annualDebtService = monthlyDebtPmt * 12;
+                }
             }
-            
 
-            if (!dscrByYear[acqOffset]) dscrByYear[acqOffset] = [];
+            // === 3.6 Debt Amortization Schedule ===
+            const debtSchedule = Array.from({ length: years }, () => Array(months).fill(0));
+            let debtBalance = finalDebtAmount;
 
-            if (dscrMin > 0 && (ebitdaAnnual / totalDebtService) < dscrMin) {
-                const maxAllowedService = ebitdaAnnual / dscrMin;
-                const maxServiceForNewDebt = Math.max(0, maxAllowedService - annualDebtServiceSoFar);
-            
-                proposedDebtAmount = (monthlyRateDebt === 0)
-                    ? maxServiceForNewDebt * (debtTermMonths / 12)
-                    : maxServiceForNewDebt / (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+            for (let m = 0; m < debtTermMonths; m++) {
+                const globalMonth = acqMonthIndex + m;
+                if (globalMonth >= years * 12) break;
+
+                const y = Math.floor(globalMonth / 12);
+                const mo = globalMonth % 12;
+
+                const interest = debtBalance * monthlyRateDebt;
+                const principal = monthlyDebtPmt - interest;
+                debtBalance -= principal;
+
+                debtSchedule[y][mo] = monthlyDebtPmt;
             }
-            
-            const debtAmount = proposedDebtAmount;
-            const debtPct = (debtAmount / valuation) * 100;
 
-            const monthlyDebtPmt = (monthlyRateDebt === 0)
-                ? debtAmount / debtTermMonths
-                : debtAmount * (monthlyRateDebt / (1 - Math.pow(1 + monthlyRateDebt, -debtTermMonths)));
+            debtScheduleByCompany[i] = debtSchedule;
+            const debtAmount = finalDebtAmount;
 
-            const annualDebtService = monthlyDebtPmt * 12;
-            const actualDSCR = totalDebtService > 0 ? ebitdaAnnual / totalDebtService : 99;
+            for (let y = acqOffset; y < years; y++) {
+                const yearOffset = y - acqOffset;
+                const revGrowthFactor = Math.pow(1 + growth + priceInflation, yearOffset);
+                const costGrowthFactor = Math.pow(1 + costInflation, yearOffset);
+              
+                for (let m = 0; m < months; m++) {
+                  if (y === acqOffset && m < acqMonth - 1) continue;
 
-            
-            // DEBUG LOG for DSCR issues on first company
-            if ((actualDSCR < 0 || isNaN(actualDSCR) || !isFinite(actualDSCR))) {
-                console.warn(`⚠️ DSCR issue in run ${run + 1}, company ${i + 1}`, {
-                    rev,
-                    ebitdaPct,
-                    baseAnnualEBITDA,
-                    proposedDebtAmount,
-                    proposedAnnualDebtService,
-                    actualDSCR,
-                    ebitdaAnnual,
-                    totalDebtService
-                });
+                    const baseRev = revMonthly[m] * revGrowthFactor;
+                    const baseCst = monthlyBaseCost * costGrowthFactor;
+                
+                    const adjustedRevenue = baseRev * (1 + synergies.cross + synergies.price - synergies.churn);
+                    const adjustedCost = baseCst * (1 - synergies.tech - synergies.shared - synergies.facility);
+                    const adjustedEBITDA = adjustedRevenue - adjustedCost - extraExp;
+                
+                    // Store to company/year totals
+                    adjustedEBITDAByCompanyYear[i][y] += adjustedEBITDA;
+                    revenue[y][m] += adjustedRevenue;
+                    cost[y][m] += adjustedCost;
+                    ebitda[y][m] += adjustedEBITDA;
+                    revenueTotals[y][m] += adjustedRevenue;
+                    costTotals[y][m] += adjustedCost;
+                    ebitdaTotals[y][m] += adjustedEBITDA;
+                    revenueCount[y][m]++;
+                    costCount[y][m]++;
+                    ebitdaCount[y][m]++;
+
+                        // === Step 4: Monthly Cash Flow Calculation ===
+                    const debtOut = debtScheduleByCompany[i]?.[y]?.[m] || 0;
+                    const sellerOut = sellerDebtScheduleByCompany[i]?.[y]?.[m] || 0;
+                    const earnoutOut = earnoutScheduleByCompany[i]?.[y]?.[m] || 0;
+
+                    const netCash = adjustedEBITDA - debtOut - sellerOut - earnoutOut;
+
+                    netCashFlow[y][m] += netCash;
+                    netCashFlowByCompany[i][y][m] = netCash;
+
+                    // Optional: save detailed breakdowns for export or debugging
+                    debtOutflowByCompany[i][y][m] = debtOut;
+                    sellerOutflowByCompany[i][y][m] = sellerOut;
+                    earnoutOutflowByCompany[i][y][m] = earnoutOut;
+                }
             }
-            
-            dscrByYear[acqOffset][run] = actualDSCR;
-            annualDebtServiceSoFar += annualDebtService;
-
-            debtUsedByYear[acqOffset][run] += debtAmount;
-            debtUsedByCompany[i][run] = debtAmount;
 
 
-			// Transaction Fee (based on debt)
-			const feePct = +document.getElementById(`fund_fee_${i}`).value || 0;
-            const feeAmount = Math.min((feePct / 100) * debtAmount, valuation * 0.1); // fee max 10% of EV
+            // === Step 5.1: Funding Gap & Upfront Cash Required ===
+            const feePct = +document.getElementById(`fund_fee_${i}`).value || 0;
+            const feeAmount = Math.min((feePct / 100) * debtAmount, valuation * 0.1); // Cap fees at 10% of EV
+            const minOpCash = +document.getElementById(`min_operating_cash`).value || 0;
+            const extraInitialCash = (i === 0) ? (initialCashBS + sfCapitalRemaining) : 0;
 
 
-			let extraInitialCash = 0;
-			if (!usedInitialCashBS) {
-				extraInitialCash = initialCashBS;
-				usedInitialCashBS = true;
-			}
-
-
-            
             const fundingGap = valuation - (rolloverAmount + sellerAmount + earnoutAmount + debtAmount);
-            const upfrontCash = fundingGap + feeAmount + minOpCash + extraInitialCash;
-            
-			let equityUsedForThisAcq = upfrontCash;
-            
-			if (rollupCashBalance >= upfrontCash) {
-				rollupCashBalance -= upfrontCash;
-				equityUsedForThisAcq = 0;
-			} else {
-				equityUsedForThisAcq = upfrontCash - rollupCashBalance;
-				rollupCashBalance = 0;
-			}
+            const upfrontCashRequired = fundingGap + feeAmount + minOpCash + extraInitialCash;
 
-			// Track equity needed per year and per company
-			equityPerYear[acqOffset][run] += equityUsedForThisAcq;
-			equityPerCompany[i][run] = equityUsedForThisAcq;
 
-			const opsCashUsed = upfrontCash - equityUsedForThisAcq;
-			opsCashUsedByYear[acqOffset][run] += opsCashUsed;
+            // === Step 5.2: Accumulate rollup cash available up to this acquisition ===
+            let rollupCashBalance = 0;
 
-            const netOutlay = Math.max(upfrontCash, 0);
+            for (let j = 0; j < i; j++) {
+                const prevYear = +document.getElementById(`c${j}_year`).value;
+                const prevMonth = +document.getElementById(`c${j}_month`).value;
+                const prevMonthIndex = (prevYear - simulationStartYear) * 12 + (prevMonth - 1);
+
+                if (prevMonthIndex < acqMonthIndex) {
+                    for (let m = prevMonthIndex; m < acqMonthIndex; m++) {
+                    const y = Math.floor(m / 12);
+                    const mo = m % 12;
+                    rollupCashBalance += netCashFlowByCompany[j][y][mo] || 0;
+                    }
+                }
+            }
+
+            // === Step 5.3: Cover funding gap with available cash, then equity ===
+            let equityUsedForThisAcq = upfrontCashRequired;
+            let opsCashUsed = 0;
+
+            if (rollupCashBalance >= upfrontCashRequired) {
+                rollupCashBalance -= upfrontCashRequired;
+                equityUsedForThisAcq = 0;
+                opsCashUsed = upfrontCashRequired;
+            } else {
+                const cashUsed = rollupCashBalance;
+                equityUsedForThisAcq = upfrontCashRequired - cashUsed;
+                rollupCashBalance = 0;
+                opsCashUsed = cashUsed;
+            }
+
+            // === Step 5.4: Track results ===
+            equityPerYear[acqOffset][run] += equityUsedForThisAcq;
+            equityPerCompany[i][run] = equityUsedForThisAcq;
+
+            opsCashUsedByYear[acqOffset][run] += opsCashUsed;
+
+            const netOutlay = Math.max(upfrontCashRequired, 0);
             netCashFlow[acqOffset][acqMonth - 1] -= netOutlay;
             cashByYear[acqOffset] += netOutlay;
-
-
-			let monthlyPayment = 0;
-			const monthlyRate = sellerRate / 100 / 12;
-			if (monthlyRate === 0) {
-				monthlyPayment = sellerAmount / sellerTerm;
-			} else {
-				monthlyPayment = sellerAmount * (monthlyRate / (1 - Math.pow(1 + monthlyRate, -sellerTerm)));
-			}
-
-			let sfBalance = sellerAmount;
-
-			for (let m = 0; m < sellerTerm; m++) {
-				const globalMonth = acqMonthIndex + m;
-				if (globalMonth >= years * 12) break;
-
-				const yearIndex = Math.floor(globalMonth / 12);
-				const monthIndex = globalMonth % 12;
-
-				const sfInterest = sfBalance * monthlyRate;
-				const sfPrincipal = monthlyPayment - sfInterest;
-				sfBalance -= sfPrincipal;
-
-				// Store separate amortization parts
-				sellerDebtScheduleByCompany[i][yearIndex][monthIndex] += monthlyPayment;
-
-				// Save for export (build new matrix if needed)
-				if (!sellerDebtScheduleByCompany[i].interest) sellerDebtScheduleByCompany[i].interest = Array.from({
-					length: years
-				}, () => Array(months).fill(0));
-				if (!sellerDebtScheduleByCompany[i].principal) sellerDebtScheduleByCompany[i].principal = Array.from({
-					length: years
-				}, () => Array(months).fill(0));
-
-				sellerDebtScheduleByCompany[i].interest[yearIndex][monthIndex] += sfInterest;
-				sellerDebtScheduleByCompany[i].principal[yearIndex][monthIndex] += sfPrincipal;
-				netCashFlow[yearIndex][monthIndex] -= monthlyPayment;
-
-			}
-
-            let debtBalance = debtAmount;
-
-			//Debt calculation:
-			for (let m = 0; m < debtTermMonths; m++) {
-				const globalMonth = acqMonthIndex + m;
-				if (globalMonth >= years * 12) break;
-
-				const y = Math.floor(globalMonth / 12);
-				const mo = globalMonth % 12;
-
-				const interest = debtBalance * monthlyRateDebt;
-				const principal = monthlyDebtPmt - interest;
-				debtBalance -= principal;
-
-				debtScheduleByCompany[i][y][mo] += monthlyDebtPmt;
-
-				if (!debtScheduleByCompany[i].interest) debtScheduleByCompany[i].interest = Array.from({
-					length: years
-				}, () => Array(months).fill(0));
-				if (!debtScheduleByCompany[i].principal) debtScheduleByCompany[i].principal = Array.from({
-					length: years
-				}, () => Array(months).fill(0));
-
-				debtScheduleByCompany[i].interest[y][mo] += interest;
-				debtScheduleByCompany[i].principal[y][mo] += principal;
-				netCashFlow[y][mo] -= monthlyDebtPmt;
-
-			}
-			totalCashThisRun += upfrontCash;
-			valuationRunsByYear[acqOffset][run] += valuation;
-
-            
-
-			companyRunData.push({
-				run: run + 1,
-				company: i + 1,
-				acquisition_year: acqYear,
-				acquisition_month: acqMonth,
-				revenue: rev.toFixed(2),
-				ebitda_pct: (ebitdaPct * 100).toFixed(2),
-				cost: baseCost.toFixed(2),
-				base_ebitda: baseAnnualEBITDA.toFixed(2),
-				multiple: multiple.toFixed(2),
-				multiple_avgMult: avgMult.toFixed(2),
-				multiple_stdMult: stdMult.toFixed(2),
-				valuation: valuation.toFixed(2),
-				rollover: rolloverPct.toFixed(2),
-				earnout: earnoutPct.toFixed(2),
-				earnout_amount: earnoutAmount.toFixed(2),
-				earnout_years: earnoutYears,
-				seller: sellerPct.toFixed(2),
-				seller_amount: sellerAmount.toFixed(2),
-				seller_rate: sellerRate.toFixed(2),
-				debt_pct: debtPct.toFixed(2),
-				debt_amount: debtAmount.toFixed(2),
-				fee_pct: feePct.toFixed(2),
-				fee_amount: feeAmount.toFixed(2),
-				cash_needed: upfrontCash.toFixed(2),
-				...synergies
-			});
-            
-		}
-
-		for (let y = 0; y < years; y++) {
-			for (let m = 0; m < months; m++) {
-				ebitdaAnnualRuns[run][y] += ebitda[y][m];
-			}
+            totalCashThisRun += netOutlay;
+                    
 		}
 
         for (let y = 0; y < years; y++) {
+            for (let m = 0; m < months; m++) {
+                ebitdaAnnualRuns[run][y] += ebitda[y][m];
+            }
+        }
+        
+        for (let y = 0; y < years; y++) {
             let totalEBITDA = ebitdaAnnualRuns[run][y];
             let totalDebtService = 0;
-        
+          
             for (let m = 0; m < months; m++) {
-                for (let c = 0; c < numCompanies; c++) {
-                    totalDebtService += 
-                        (debtScheduleByCompany[c]?.[y]?.[m] || 0) + 
-                        (sellerDebtScheduleByCompany[c]?.[y]?.[m] || 0);
-                }
+              for (let c = 0; c < numCompanies; c++) {
+                totalDebtService += 
+                  (debtScheduleByCompany[c]?.[y]?.[m] || 0) + 
+                  (sellerDebtScheduleByCompany[c]?.[y]?.[m] || 0);
+              }
             }
-        
+          
             dscrByYear[y][run] = totalDebtService === 0 ? 99 : totalEBITDA / totalDebtService;
         }
 
-		let totalEquityRequired = 0;
-		let runningBalance = 0;
+        let runningBalance = 0;
 
-		for (let y = 0; y < years; y++) {
-			let equityInjectedThisYear = 0;
-			for (let m = 0; m < months; m++) {
-				runningBalance += netCashFlow[y][m];
+        for (let y = 0; y < years; y++) {
+            let equityInjectedThisYear = 0;
 
-				if (runningBalance < minOpCash) {
-					const shortfall = minOpCash - runningBalance;
-					equityInjectedThisYear += shortfall;
-					runningBalance += shortfall;
-				}
-			}
+            for (let m = 0; m < months; m++) {
+                runningBalance += netCashFlow[y][m];
 
-			cashRequiredPerYear[y].push(equityInjectedThisYear); // Used for boxplot
-			equityPerYear[y][run] = equityInjectedThisYear; // Used for yearly equity chart
-		}
+                if (runningBalance < minOpCash) {
+                    const shortfall = minOpCash - runningBalance;
+                    equityInjectedThisYear += shortfall;
+                    runningBalance += shortfall;
+                }
+            }
 
-		const totalEquityThisRun = equityPerYear.reduce(
-			(sum, yearArray) => sum + (yearArray[run] || 0),
-			0
-		);
-		cashRequiredRuns.push(totalEquityThisRun);
+            cashRequiredPerYear[y].push(equityInjectedThisYear);  // used for boxplot
+            equityPerYear[y][run] += equityInjectedThisYear;     // update final equity
+        }
+
+        const totalEquityThisRun = equityPerYear.reduce((sum, yearArray) => sum + (yearArray[run] || 0),0);
+        cashRequiredRuns.push(totalEquityThisRun);
+          
+
+          
+
+        
 	}
 
-
-	// Final average by dividing only by counts (not full NUM_RUNS)
-	for (let y = 0; y < years; y++) {
-		for (let m = 0; m < months; m++) {
-			revenueTotals[y][m] /= NUM_RUNS;
-			costTotals[y][m] /= NUM_RUNS;
-			ebitdaTotals[y][m] /= NUM_RUNS;
-		}
-	}
+    const avgEquityByYear = equityPerYear.map(yearArr => {
+        const sum = yearArr.reduce((a, b) => a + b, 0);
+        return sum / NUM_RUNS;
+    });
+      
+    const avgOpsCashByYear = opsCashUsedByYear.map(yearArr => {
+        const sum = yearArr.reduce((a, b) => a + b, 0);
+        return sum / NUM_RUNS;
+    });
+      
+    const avgDSCRByYear = dscrByYear.map(yearArr => {
+        const valid = yearArr.filter(val => isFinite(val));
+        const sum = valid.reduce((a, b) => a + b, 0);
+        return valid.length > 0 ? sum / valid.length : 99;
+    });
+      
+    exportResults.push({
+        run,
+        totalEquity: totalEquityThisRun,
+        totalCash: totalCashThisRun,
+        valuationTotal: valuationRunsByYear.reduce((sum, arr) => sum + (arr[run] || 0), 0),
+        avgDSCR: dscrByYear.map(arr => arr[run] || 0),
+        equityByYear: equityPerYear.map(arr => arr[run] || 0)
+    });
+      
 
 	document.getElementById("resultsTable").innerHTML = '';
 	renderTable("Revenue (Avg)", revenueTotals);
