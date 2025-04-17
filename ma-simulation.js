@@ -1408,7 +1408,7 @@ function runSimulation() {
             // === Step 5.1: Funding Gap & Upfront Cash Required ===
             const feePct = +document.getElementById(`fund_fee_${i}`).value || 0;
             const feeAmount = Math.min((feePct / 100) * debtAmount, valuation * 0.1); // Cap fees at 10% of EV
-            const minOpCash = +document.getElementById(`min_operating_cash`).value || 0;
+            const minOpCash = +document.getElementById(`fund_cash_min_${i}`)?.value || 0;
             const extraInitialCash = (i === 0) ? (initialCashBS + sfCapitalRemaining) : 0;
 
 
