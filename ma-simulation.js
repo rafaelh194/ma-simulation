@@ -1692,7 +1692,4 @@ document.addEventListener('DOMContentLoaded', () => {
 	window.toggleAllCompanies = toggleAllCompanies;
 	window.toggleCollapsedBlock = toggleCollapsedBlock;
 	window.toggleTable = toggleTable;
-	window.exportCompanyRunDataCSV = exportCompanyRunDataCSV;
-	window.exportDebtSchedulesCSV = exportDebtSchedulesCSV;
-    window.exportKPIDataCSV = exportKPIDataCSV;
 });
