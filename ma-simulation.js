@@ -1504,7 +1504,27 @@ function runSimulation() {
         const totalEquityThisRun = equityPerYear.reduce((sum, yearArray) => sum + (yearArray[run] || 0),0);
         cashRequiredRuns.push(totalEquityThisRun);
           
-
+        companyRunData.push({
+            run: run + 1,
+            company: i + 1,
+            acquisition_year: acqYear,
+            acquisition_month: acqMonth,
+            revenue: rev.toFixed(2),
+            ebitda_pct: (ebitdaPct * 100).toFixed(2),
+            base_ebitda: baseAnnualEBITDA.toFixed(2),
+            valuation: valuation.toFixed(2),
+            multiple: multiple.toFixed(2),
+            debt_pct: debtPct.toFixed(2),
+            debt_amount: debtAmount.toFixed(2),
+            fee_amount: feeAmount.toFixed(2),
+            equity_injected: equityUsedForThisAcq.toFixed(2),
+            cash_needed: upfrontCashRequired.toFixed(2),
+            extra_exp: extraExp,
+            seller: sellerPct.toFixed(2),
+            earnout: earnoutPct.toFixed(2),
+            rollover: rolloverPct.toFixed(2),
+            // add other fields you use in exportKPIDataCSV if needed
+        });
           
 
         
@@ -1552,28 +1572,6 @@ function runSimulation() {
 	};
 
 
-
-    companyRunData.push({
-        run: run + 1,
-        company: i + 1,
-        acquisition_year: acqYear,
-        acquisition_month: acqMonth,
-        revenue: rev.toFixed(2),
-        ebitda_pct: (ebitdaPct * 100).toFixed(2),
-        base_ebitda: baseAnnualEBITDA.toFixed(2),
-        valuation: valuation.toFixed(2),
-        multiple: multiple.toFixed(2),
-        debt_pct: debtPct.toFixed(2),
-        debt_amount: debtAmount.toFixed(2),
-        fee_amount: feeAmount.toFixed(2),
-        equity_injected: equityUsedForThisAcq.toFixed(2),
-        cash_needed: upfrontCashRequired.toFixed(2),
-        extra_exp: extraExp,
-        seller: sellerPct.toFixed(2),
-        earnout: earnoutPct.toFixed(2),
-        rollover: rolloverPct.toFixed(2),
-        // add other fields you use in exportKPIDataCSV if needed
-      });
       
 	renderMonteCarloSummary(summary);
 	document.getElementById("chartsSection").style.display = "block";
