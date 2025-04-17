@@ -1526,15 +1526,6 @@ function runSimulation() {
         return valid.length > 0 ? sum / valid.length : 99;
     });
       
-    exportResults.push({
-        run,
-        totalEquity: totalEquityThisRun,
-        totalCash: totalCashThisRun,
-        valuationTotal: valuationRunsByYear.reduce((sum, arr) => sum + (arr[run] || 0), 0),
-        avgDSCR: dscrByYear.map(arr => arr[run] || 0),
-        equityByYear: equityPerYear.map(arr => arr[run] || 0)
-    });
-      
 
 	document.getElementById("resultsTable").innerHTML = '';
 	renderTable("Revenue (Avg)", revenueTotals);
