@@ -1097,6 +1097,15 @@ function runSimulation() {
 		}, () => Array(months).fill(0))
 	);
 
+    const earnoutScheduleByCompany = Array.from({ 
+            length: numCompanies
+        }, () =>
+        Array.from({ 
+            length: years 
+        }, () => Array(months).fill(0))
+    );
+    
+
     const companyRunData = [];
 
 	for (let run = 0; run < NUM_RUNS; run++) {
