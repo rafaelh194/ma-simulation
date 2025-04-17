@@ -934,55 +934,57 @@ function renderCharts(
     const rows = [];
   
     for (let run = 0; run < NUM_RUNS; run++) {
-      for (let i = 0; i < numCompanies; i++) {
-        const data = companyRunData.find(
-          (d) => d.run === run + 1 && d.company === i + 1,
-        );
-        if (!data) continue;
-  
-        const equity = equityPerCompany[i][run] || 0;
-        const debt = debtUsedByCompany[i][run] || 0;
-        const ebitda = parseFloat(data.base_ebitda) || 0;
-        const valuation = parseFloat(data.valuation) || 0;
-        const revenue = parseFloat(data.revenue) || 0;
-  
-        const dscr = (() => {
-          const yearIndex = data.acquisition_year - 2025;
-          return dscrByYear?.[yearIndex]?.[run] ?? null;
-        })();
-  
-        const evToRevenue = revenue > 0 ? valuation / revenue : null;
-        const ebitdaMargin = revenue > 0 ? ebitda / revenue : null;
-        const debtToEbitda = ebitda > 0 ? debt / ebitda : null;
-        const equityPctOfEV = valuation > 0 ? equity / valuation : null;
-        const netCashOutlay = equity + (parseFloat(data.cash_needed) - equity);
-  
-        rows.push({
-          run: run + 1,
-          company: i + 1,
-          year: data.acquisition_year,
-          revenue,
-          base_ebitda: ebitda,
-          valuation,
-          multiple: data.multiple,
-          ev_to_revenue: evToRevenue,
-          ebitda_margin: ebitdaMargin,
-          debt_used: debt,
-          debt_pct: data.debt_pct,
-          debt_to_ebitda: debtToEbitda,
-          equity_injected: equity,
-          equity_pct_of_ev: equityPctOfEV,
-          ops_cash_used: parseFloat(data.cash_needed) - equity,
-          net_cash_outlay: netCashOutlay,
-          rollover_pct: data.rollover,
-          earnout_pct: data.earnout,
-          seller_pct: data.seller,
-          fee_amount: data.fee_amount,
-          extra_exp: data.extra_exp,
-          dscr,
-        });
-      }
+        for (let i = 0; i < numCompanies; i++) {
+            const data = companyRunData.find(
+            (d) => d.run === run + 1 && d.company === i + 1
+            );
+            if (!data) continue;
+        
+            const equity = equityPerCompany[i][run] || 0;
+            const debt = debtUsedByCompany[i][run] || 0;
+        
+            rows.push({
+            run: run + 1,
+            company: i + 1,
+            year: data.acquisition_year,
+            month: data.acquisition_month,
+            revenue: parseFloat(data.revenue),
+            base_ebitda: parseFloat(data.base_ebitda),
+            ebitda_pct: parseFloat(data.ebitda_pct),
+            multiple: parseFloat(data.multiple),
+            valuation: parseFloat(data.valuation),
+        
+            // Capital Structure
+            debt_used: debt,
+            preadj_debt_pct: parseFloat(data.preadj_debt_pct),
+            seller_pct: parseFloat(data.seller),
+            seller_amount: parseFloat(data.seller_amount),
+            earnout_pct: parseFloat(data.earnout),
+            earnout_amount: parseFloat(data.earnout_amount),
+            earnout_years: data.earnout_years,
+            rollover_pct: parseFloat(data.rollover),
+            rollover_amount: parseFloat(data.rollover_amount),
+            fee_pct: parseFloat(data.fee_pct),
+            fee_amount: parseFloat(data.fee_amount),
+            extra_exp: parseFloat(data.extra_exp),
+        
+            // Funding
+            equity_injected: equity,
+            ops_cash_used: parseFloat(data.ops_cash_used),
+            net_cash_outlay: parseFloat(data.net_cash_outlay),
+        
+            // Derived KPIs
+            ev_to_revenue: parseFloat(data.ev_to_revenue),
+            ebitda_margin: parseFloat(data.ebitda_margin),
+            debt_to_ebitda: parseFloat(data.debt_to_ebitda),
+            equity_pct_of_ev: parseFloat(data.equity_pct_of_ev),
+        
+            // Risk
+            dscr: parseFloat(data.dscr)
+            });
+        }
     }
+      
   
     const csvContent = [
       Object.keys(rows[0]).join(","),
@@ -1464,25 +1466,46 @@ function runSimulation() {
                 company: i + 1,
                 acquisition_year: acqYear,
                 acquisition_month: acqMonth,
+                
+                // Valuation and earnings
                 revenue: rev.toFixed(2),
-                ebitda_pct: (ebitdaPct * 100).toFixed(2),
+                ebitda_pct: (ebitdaPct * 100).toFixed(4),
                 base_ebitda: baseAnnualEBITDA.toFixed(2),
-                valuation: valuation.toFixed(2),
                 multiple: multiple.toFixed(2),
-                debt_pct: debtPct.toFixed(2),
+                valuation: valuation.toFixed(2),
+            
+                // Financing mix
+                preadj_debt_pct: simulatedDebtPct.toFixed(4),
                 debt_amount: debtAmount.toFixed(2),
+                seller_pct: sellerPct.toFixed(2),
+                seller_amount: sellerAmount.toFixed(2),
+                earnout_pct: earnoutPct.toFixed(2),
+                earnout_amount: earnoutAmount.toFixed(2),
+                earnout_years: earnoutYears,
+                rollover_pct: rolloverPct.toFixed(2),
+                rollover_amount: rolloverAmount.toFixed(2),
+                fee_pct: feePct.toFixed(2),
                 fee_amount: feeAmount.toFixed(2),
-                equity_injected: equityUsedForThisAcq.toFixed(2),
-                cash_needed: upfrontCashRequired.toFixed(2),
                 extra_exp: extraExp,
-                seller: sellerPct.toFixed(2),
-                earnout: earnoutPct.toFixed(2),
-                rollover: rolloverPct.toFixed(2),
-                // add other fields you use in exportKPIDataCSV if needed
+            
+                // Funding structure
+                equity_injected: equityUsedForThisAcq.toFixed(2),
+                ops_cash_used: opsCashUsed.toFixed(2),
+                net_cash_outlay: upfrontCashRequired.toFixed(2),
+            
+                // Derived KPIs
+                ev_to_revenue: rev > 0 ? (valuation / rev).toFixed(4) : null,
+                ebitda_margin: rev > 0 ? (baseAnnualEBITDA / rev).toFixed(4) : null,
+                debt_to_ebitda: baseAnnualEBITDA > 0 ? (debtAmount / baseAnnualEBITDA).toFixed(4) : null,
+                equity_pct_of_ev: valuation > 0 ? (equityUsedForThisAcq / valuation).toFixed(4) : null,
+            
+                // DSCR (from per-year map)
+                dscr: dscrByYear[acqOffset]?.[run] ?? null
             });
+            
                     
 		}
-        
+
         for (let y = 0; y < years; y++) {
             for (let m = 0; m < months; m++) {
                 ebitdaAnnualRuns[run][y] += ebitda[y][m];
