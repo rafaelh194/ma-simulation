@@ -1104,6 +1104,18 @@ function runSimulation() {
             length: years 
         }, () => Array(months).fill(0))
     );
+
+    const debtOutflowByCompany = Array.from({ length: numCompanies }, () =>
+        Array.from({ length: years }, () => Array(months).fill(0))
+      );
+    const sellerOutflowByCompany = Array.from({ length: numCompanies }, () =>
+        Array.from({ length: years }, () => Array(months).fill(0))
+    );
+
+    const earnoutOutflowByCompany = Array.from({ length: numCompanies }, () =>
+        Array.from({ length: years }, () => Array(months).fill(0))
+    );
+            
     
 
     const companyRunData = [];
